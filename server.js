@@ -4,20 +4,52 @@ const https = require('https');
 const path = require('path');
 const os = require('os');
 const { WebSocketServer } = require('ws');
-const { mouse, Point, Button, keyboard, Key } = require('@nut-tree-fork/nut-js');
 const qrcode = require('qrcode-terminal');
-const { execFile } = require('child_process');
+const { spawn } = require('child_process');
 const fs = require('fs');
 const selfsigned = require('selfsigned');
 
-const volumeExe = path.join(__dirname, 'bin', 'volume.exe');
+const CONTROLLER_EXE = path.join(__dirname, 'bin', 'controller.exe');
 const CERT_DIR = path.join(__dirname, '.cert');
 const CERT_FILE = path.join(CERT_DIR, 'cert.pem');
 const KEY_FILE = path.join(CERT_DIR, 'key.pem');
 
-// Configure nut-js mouse and keyboard delays for responsive control
-mouse.config.autoDelayMs = 0;
-keyboard.config.autoDelayMs = 0;
+// Native C# Controller Process
+let controllerProc = null;
+
+function startController() {
+  if (!fs.existsSync(CONTROLLER_EXE)) {
+    console.error(`[Controller] ${CONTROLLER_EXE} not found!`);
+    return;
+  }
+
+  controllerProc = spawn(CONTROLLER_EXE, [], {
+    stdio: ['pipe', 'pipe', 'inherit'],
+    windowsHide: true
+  });
+
+  controllerProc.on('exit', (code) => {
+    console.warn(`[Controller] Process exited (code: ${code}). Restarting in 500ms...`);
+    controllerProc = null;
+    setTimeout(startController, 500);
+  });
+
+  controllerProc.on('error', (err) => {
+    console.error('[Controller Error]', err.message || err);
+  });
+}
+
+function sendNativeCommand(cmd) {
+  if (controllerProc && controllerProc.stdin && !controllerProc.killed) {
+    try {
+      controllerProc.stdin.write(cmd + '\n');
+    } catch (err) {
+      console.error('[Controller Write Error]', err.message || err);
+    }
+  }
+}
+
+startController();
 
 // Initialize Express app
 const app = express();
@@ -41,62 +73,12 @@ function handleUpgrade(req, socket, head) {
 
 httpServer.on('upgrade', handleUpgrade);
 
-// Queue / accumulator to prevent overlapping async mouse calls
-let isMoving = false;
-let pendingDx = 0;
-let pendingDy = 0;
-
-async function processMouseMove(dx, dy) {
-  pendingDx += dx;
-  pendingDy += dy;
-
-  if (isMoving) return;
-  isMoving = true;
-
-  try {
-    while (pendingDx !== 0 || pendingDy !== 0) {
-      const curDx = pendingDx;
-      const curDy = pendingDy;
-      pendingDx = 0;
-      pendingDy = 0;
-
-      const currentPos = await mouse.getPosition();
-      const nextX = currentPos.x + curDx;
-      const nextY = currentPos.y + curDy;
-      await mouse.setPosition(new Point(nextX, nextY));
-    }
-  } catch (err) {
-    console.error('[Mouse Move Error]', err.message || err);
-  } finally {
-    isMoving = false;
-  }
-}
-
-// Key mapping for special keys
-const KEY_MAP = {
-  'Enter': Key.Return,
-  'Return': Key.Return,
-  'Backspace': Key.Backspace,
-  'Space': Key.Space,
-  'Escape': Key.Escape,
-  'Esc': Key.Escape,
-  'Tab': Key.Tab,
-  'ArrowUp': Key.Up,
-  'Up': Key.Up,
-  'ArrowDown': Key.Down,
-  'Down': Key.Down,
-  'ArrowLeft': Key.Left,
-  'Left': Key.Left,
-  'ArrowRight': Key.Right,
-  'Right': Key.Right
-};
-
 // WebSocket message dispatcher
 wss.on('connection', (ws, req) => {
   const clientIp = req.socket.remoteAddress;
   console.log(`[WS] Client connected from ${clientIp}`);
 
-  ws.on('message', async (message) => {
+  ws.on('message', (message) => {
     try {
       const data = JSON.parse(message.toString());
 
@@ -105,76 +87,47 @@ wss.on('connection', (ws, req) => {
           const dx = Math.round(Number(data.dx) || 0);
           const dy = Math.round(Number(data.dy) || 0);
           if (dx !== 0 || dy !== 0) {
-            processMouseMove(dx, dy);
+            sendNativeCommand(`move ${dx} ${dy}`);
           }
           break;
         }
 
         case 'click': {
           const button = (data.button || 'left').toLowerCase();
-          if (button === 'middle') {
-            await mouse.click(Button.MIDDLE);
-          } else if (button === 'right') {
-            await mouse.rightClick();
-          } else {
-            await mouse.leftClick();
-          }
+          sendNativeCommand(`click ${button}`);
           break;
         }
 
         case 'scroll': {
-          // dy < 0 or direction === 'up' indicates scrolling up; dy > 0 indicates scrolling down
           const dy = Number(data.dy) || 0;
-          const direction = data.direction;
+          const direction = data.direction || (dy < 0 ? 'up' : 'down');
           const steps = Math.max(1, Math.min(250, Math.round(Math.abs(data.amount || dy || 1))));
-
-          if (direction === 'up' || dy < 0) {
-            await mouse.scrollUp(steps);
-          } else {
-            await mouse.scrollDown(steps);
-          }
+          sendNativeCommand(`scroll ${direction} ${steps}`);
           break;
         }
 
         case 'keyboard_type': {
           if (typeof data.text === 'string' && data.text.length > 0) {
-            await keyboard.type(data.text);
+            const clean = data.text.replace(/\r/g, '');
+            for (const line of clean.split('\n')) {
+              if (line.length > 0) {
+                sendNativeCommand(`type ${line}`);
+              }
+            }
           }
           break;
         }
 
         case 'keyboard_key': {
-          const targetKey = KEY_MAP[data.key];
-          if (targetKey !== undefined) {
-            await keyboard.pressKey(targetKey);
-            await keyboard.releaseKey(targetKey);
-          } else {
-            console.warn(`[Keyboard Key] Unmapped key: ${data.key}`);
+          if (typeof data.key === 'string' && data.key.length > 0) {
+            sendNativeCommand(`key ${data.key}`);
           }
           break;
         }
 
         case 'volume': {
           const action = (data.action || '').toLowerCase();
-          if (fs.existsSync(volumeExe)) {
-            // Use native Windows extended key handler (KEYEVENTF_EXTENDEDKEY)
-            execFile(volumeExe, [action], (err) => {
-              if (err) console.error('[Volume Exec Error]', err.message || err);
-            });
-          } else {
-            let targetKey;
-            if (action === 'up') {
-              targetKey = Key.AudioVolUp || Key.AudioVolumeUp;
-            } else if (action === 'down') {
-              targetKey = Key.AudioVolDown || Key.AudioVolumeDown;
-            } else if (action === 'mute') {
-              targetKey = Key.AudioMute || Key.AudioVolumeMute;
-            }
-
-            if (targetKey !== undefined) {
-              await keyboard.type(targetKey);
-            }
-          }
+          sendNativeCommand(`vol ${action}`);
           break;
         }
 
@@ -275,7 +228,7 @@ async function getOrCreateCert(primaryIp) {
     console.log(`  Localhost (HTTP):  http://localhost:${PORT}`);
   });
 
-  // Try starting HTTPS server for Air Mouse / Gyroscope
+  // Start HTTPS server for Air Mouse / Gyroscope
   const sslCreds = await getOrCreateCert(primaryIp);
   if (sslCreds) {
     try {

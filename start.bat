@@ -19,6 +19,15 @@ if not exist "node_modules\" (
     echo.
 )
 
+if not exist "bin\controller.exe" (
+    echo [INFO] Compiling native Windows controller...
+    if exist "%SystemRoot%\Microsoft.NET\Framework64\v4.0.30319\csc.exe" (
+        "%SystemRoot%\Microsoft.NET\Framework64\v4.0.30319\csc.exe" /nologo /optimize /out:bin\controller.exe bin\controller.cs
+    ) else if exist "%SystemRoot%\Microsoft.NET\Framework\v4.0.30319\csc.exe" (
+        "%SystemRoot%\Microsoft.NET\Framework\v4.0.30319\csc.exe" /nologo /optimize /out:bin\controller.exe bin\controller.cs
+    )
+)
+
 echo [INFO] Launching Remote Mouse Server...
 echo.
 node server.js
