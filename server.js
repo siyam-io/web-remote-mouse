@@ -5,6 +5,10 @@ const os = require('os');
 const { WebSocketServer } = require('ws');
 const { mouse, Point, Button, keyboard, Key } = require('@nut-tree-fork/nut-js');
 const qrcode = require('qrcode-terminal');
+const { execFile } = require('child_process');
+const fs = require('fs');
+
+const volumeExe = path.join(__dirname, 'bin', 'volume.exe');
 
 // Configure nut-js mouse and keyboard delays for responsive control
 mouse.config.autoDelayMs = 0;
@@ -136,18 +140,25 @@ wss.on('connection', (ws, req) => {
         }
 
         case 'volume': {
-          let targetKey;
-          if (data.action === 'up') {
-            targetKey = Key.AudioVolUp || Key.AudioVolumeUp;
-          } else if (data.action === 'down') {
-            targetKey = Key.AudioVolDown || Key.AudioVolumeDown;
-          } else if (data.action === 'mute') {
-            targetKey = Key.AudioMute || Key.AudioVolumeMute;
-          }
+          const action = (data.action || '').toLowerCase();
+          if (fs.existsSync(volumeExe)) {
+            // Use native Windows extended key handler (KEYEVENTF_EXTENDEDKEY)
+            execFile(volumeExe, [action], (err) => {
+              if (err) console.error('[Volume Exec Error]', err.message || err);
+            });
+          } else {
+            let targetKey;
+            if (action === 'up') {
+              targetKey = Key.AudioVolUp || Key.AudioVolumeUp;
+            } else if (action === 'down') {
+              targetKey = Key.AudioVolDown || Key.AudioVolumeDown;
+            } else if (action === 'mute') {
+              targetKey = Key.AudioMute || Key.AudioVolumeMute;
+            }
 
-          if (targetKey !== undefined) {
-            await keyboard.pressKey(targetKey);
-            await keyboard.releaseKey(targetKey);
+            if (targetKey !== undefined) {
+              await keyboard.type(targetKey);
+            }
           }
           break;
         }
