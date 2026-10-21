@@ -1,0 +1,1499 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="theme-color" content="#0a0d14">
+  <title>Web Remote Mouse</title>
+  <style>
+    :root {
+      --bg-primary: #0a0d14;
+      --bg-secondary: #131926;
+      --bg-card: rgba(19, 25, 38, 0.75);
+      --border-color: rgba(255, 255, 255, 0.08);
+      --border-accent: rgba(56, 189, 248, 0.4);
+      --text-primary: #f1f5f9;
+      --text-muted: #94a3b8;
+      --accent-blue: #38bdf8;
+      --accent-glow: rgba(56, 189, 248, 0.25);
+      --accent-green: #10b981;
+      --accent-red: #ef4444;
+      --btn-bg: #1e293b;
+      --btn-active: #334155;
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+      -webkit-tap-highlight-color: transparent;
+      user-select: none;
+      -webkit-user-select: none;
+      touch-action: none;
+    }
+
+    html, body {
+      width: 100%;
+      height: 100%;
+      overflow: hidden;
+      background: var(--bg-primary);
+      color: var(--text-primary);
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+      overscroll-behavior: none;
+      -webkit-touch-callout: none;
+    }
+
+    /* Outer wrapper filling screen including iOS safe areas */
+    #app {
+      display: flex;
+      flex-direction: column;
+      position: relative;
+      width: 100vw;
+      height: 100dvh;
+      padding-top: env(safe-area-inset-top, 0px);
+      padding-bottom: env(safe-area-inset-bottom, 0px);
+      padding-left: env(safe-area-inset-left, 0px);
+      padding-right: env(safe-area-inset-right, 0px);
+      background: radial-gradient(circle at 50% 0%, #1e293b 0%, #0a0d14 65%);
+      overflow: hidden;
+    }
+
+    /* Top Bar */
+    header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 8px 14px;
+      height: 52px;
+      background: var(--bg-card);
+      backdrop-filter: blur(12px);
+      -webkit-backdrop-filter: blur(12px);
+      border-bottom: 1px solid var(--border-color);
+      z-index: 10;
+    }
+
+    .brand {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .status-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      padding: 4px 9px;
+      background: rgba(0, 0, 0, 0.35);
+      border-radius: 9999px;
+      border: 1px solid var(--border-color);
+      font-size: 11px;
+      font-weight: 500;
+    }
+
+    .indicator-dot {
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+      background-color: var(--accent-red);
+      box-shadow: 0 0 8px var(--accent-red);
+      transition: all 0.3s ease;
+    }
+
+    .status-badge.connected .indicator-dot {
+      background-color: var(--accent-green);
+      box-shadow: 0 0 10px var(--accent-green);
+      animation: pulse-dot 2s infinite;
+    }
+
+    @keyframes pulse-dot {
+      0%, 100% { opacity: 1; transform: scale(1); }
+      50% { opacity: 0.7; transform: scale(1.15); }
+    }
+
+    .header-actions {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .icon-btn {
+      background: rgba(255, 255, 255, 0.06);
+      border: 1px solid var(--border-color);
+      border-radius: 8px;
+      color: var(--text-primary);
+      width: 36px;
+      height: 36px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+      transition: all 0.15s ease;
+    }
+
+    .icon-btn:active, .icon-btn.active {
+      background: var(--btn-active);
+      border-color: var(--accent-blue);
+      color: var(--accent-blue);
+      box-shadow: 0 0 10px var(--accent-glow);
+    }
+
+    /* Trackpad Area */
+    #trackpad {
+      flex: 1;
+      position: relative;
+      margin: 10px 10px 4px 10px;
+      background: rgba(19, 25, 38, 0.55);
+      border-radius: 16px;
+      border: 1px solid var(--border-color);
+      box-shadow: inset 0 2px 10px rgba(0, 0, 0, 0.4), 0 8px 32px rgba(0, 0, 0, 0.3);
+      backdrop-filter: blur(8px);
+      -webkit-backdrop-filter: blur(8px);
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      overflow: hidden;
+      cursor: crosshair;
+      transition: border-color 0.2s ease;
+    }
+
+    #trackpad.active {
+      border-color: var(--border-accent);
+      box-shadow: inset 0 2px 14px rgba(0, 0, 0, 0.5), 0 0 20px var(--accent-glow);
+    }
+
+    /* Subtle grid pattern in trackpad background */
+    #trackpad::before {
+      content: '';
+      position: absolute;
+      inset: 0;
+      background-image: 
+        radial-gradient(circle, rgba(255, 255, 255, 0.05) 1px, transparent 1px);
+      background-size: 24px 24px;
+      opacity: 0.6;
+      pointer-events: none;
+    }
+
+    .trackpad-guide {
+      pointer-events: none;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 10px;
+      color: var(--text-muted);
+      opacity: 0.35;
+      transition: opacity 0.3s ease;
+      text-align: center;
+    }
+
+    #trackpad.active .trackpad-guide {
+      opacity: 0.06;
+    }
+
+    .guide-item {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      font-size: 12px;
+      letter-spacing: 0.4px;
+    }
+
+    .guide-icon {
+      font-size: 16px;
+    }
+
+    /* Visual touch point */
+    .touch-point {
+      position: absolute;
+      width: 44px;
+      height: 44px;
+      border-radius: 50%;
+      background: radial-gradient(circle, rgba(56, 189, 248, 0.6) 0%, rgba(56, 189, 248, 0) 70%);
+      border: 1.5px solid rgba(56, 189, 248, 0.8);
+      pointer-events: none;
+      transform: translate(-50%, -50%) scale(1);
+      transition: transform 0.05s ease-out;
+      z-index: 5;
+    }
+
+    /* Scroll feedback indicator overlay */
+    .scroll-overlay {
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      background: rgba(0, 0, 0, 0.75);
+      border: 1px solid var(--border-accent);
+      border-radius: 12px;
+      padding: 8px 16px;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      font-size: 13px;
+      color: var(--accent-blue);
+      pointer-events: none;
+      opacity: 0;
+      transition: opacity 0.15s ease;
+      z-index: 6;
+    }
+
+    .scroll-overlay.visible {
+      opacity: 1;
+    }
+
+    /* Compact Volume Bar directly above mouse buttons */
+    .volume-bar {
+      display: grid;
+      grid-template-columns: 1fr 1fr 1fr;
+      gap: 8px;
+      padding: 0 10px 4px 10px;
+      height: 38px;
+      z-index: 5;
+    }
+
+    .vol-btn {
+      background: rgba(30, 41, 59, 0.7);
+      backdrop-filter: blur(8px);
+      -webkit-backdrop-filter: blur(8px);
+      border: 1px solid var(--border-color);
+      border-radius: 10px;
+      color: var(--text-primary);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 5px;
+      font-size: 12px;
+      font-weight: 500;
+      cursor: pointer;
+      box-shadow: 0 2px 6px rgba(0, 0, 0, 0.25);
+      transition: all 0.1s ease;
+      touch-action: none;
+    }
+
+    .vol-btn:active, .vol-btn.btn-pressed {
+      transform: translateY(1px) scale(0.96);
+      background: rgba(51, 65, 85, 0.9);
+      border-color: var(--accent-blue);
+      box-shadow: 0 0 10px var(--accent-glow);
+      color: #ffffff;
+    }
+
+    .vol-btn.vol-btn-mute:active, .vol-btn.vol-btn-mute.btn-pressed {
+      border-color: var(--accent-red);
+      box-shadow: 0 0 10px rgba(239, 68, 68, 0.4);
+    }
+
+    .vol-icon {
+      font-size: 13px;
+    }
+
+    .vol-label {
+      font-size: 11px;
+      letter-spacing: 0.3px;
+    }
+
+    /* Bottom Mouse Buttons (3-column layout) */
+    .mouse-buttons {
+      display: grid;
+      grid-template-columns: 1fr 1fr 1fr;
+      gap: 8px;
+      padding: 4px 10px 12px 10px;
+      height: 80px;
+      z-index: 5;
+    }
+
+    .mouse-btn {
+      background: linear-gradient(180deg, #1e293b 0%, #151d2c 100%);
+      border: 1px solid var(--border-color);
+      border-radius: 12px;
+      color: var(--text-primary);
+      font-size: 14px;
+      font-weight: 600;
+      letter-spacing: 0.4px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: 3px;
+      cursor: pointer;
+      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.35);
+      transition: all 0.1s ease;
+      touch-action: none;
+    }
+
+    .mouse-btn span.btn-label {
+      font-size: 13px;
+    }
+
+    .mouse-btn span.btn-sub {
+      font-size: 10px;
+      color: var(--text-muted);
+      font-weight: 400;
+    }
+
+    .mouse-btn:active, .mouse-btn.btn-pressed {
+      transform: translateY(2px) scale(0.97);
+      background: linear-gradient(180deg, #2b394f 0%, #1d273a 100%);
+      border-color: var(--accent-blue);
+      box-shadow: 0 0 14px var(--accent-glow);
+      color: #ffffff;
+    }
+
+    /* Tap feedback flash */
+    .tap-flash {
+      position: absolute;
+      width: 54px;
+      height: 54px;
+      border-radius: 50%;
+      background: rgba(56, 189, 248, 0.4);
+      transform: translate(-50%, -50%) scale(0.4);
+      animation: tap-expand 0.3s cubic-bezier(0.1, 0.8, 0.2, 1) forwards;
+      pointer-events: none;
+      z-index: 7;
+    }
+
+    @keyframes tap-expand {
+      to {
+        transform: translate(-50%, -50%) scale(1.6);
+        opacity: 0;
+      }
+    }
+
+    /* Common Drawer Panel Styling */
+    .drawer-panel {
+      position: absolute;
+      bottom: 0;
+      left: 0;
+      right: 0;
+      background: rgba(13, 18, 30, 0.96);
+      backdrop-filter: blur(20px);
+      -webkit-backdrop-filter: blur(20px);
+      border-top: 1px solid var(--border-accent);
+      border-radius: 20px 20px 0 0;
+      padding: 12px 14px calc(14px + env(safe-area-inset-bottom, 0px)) 14px;
+      box-shadow: 0 -10px 40px rgba(0, 0, 0, 0.7);
+      transform: translateY(105%);
+      transition: transform 0.28s cubic-bezier(0.16, 1, 0.3, 1);
+      z-index: 40;
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+      max-height: 85vh;
+      overflow-y: auto;
+    }
+
+    .drawer-panel.open {
+      transform: translateY(0);
+    }
+
+    .panel-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      border-bottom: 1px solid var(--border-color);
+      padding-bottom: 6px;
+    }
+
+    .panel-title {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      font-size: 13px;
+      font-weight: 600;
+      color: var(--text-primary);
+    }
+
+    .panel-sub {
+      font-size: 11px;
+      color: var(--text-muted);
+      font-weight: 400;
+    }
+
+    .panel-close-btn {
+      background: rgba(255, 255, 255, 0.08);
+      border: 1px solid var(--border-color);
+      color: var(--text-muted);
+      border-radius: 6px;
+      width: 28px;
+      height: 28px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+      font-size: 14px;
+    }
+
+    .panel-close-btn:active {
+      color: var(--text-primary);
+      background: rgba(255, 255, 255, 0.15);
+    }
+
+    /* Settings UI Elements */
+    .settings-content {
+      display: flex;
+      flex-direction: column;
+      gap: 14px;
+      padding: 4px 2px 8px 2px;
+    }
+
+    .setting-item {
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+      background: rgba(255, 255, 255, 0.03);
+      padding: 10px 12px;
+      border-radius: 12px;
+      border: 1px solid var(--border-color);
+    }
+
+    .setting-label-row {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+
+    .setting-title {
+      font-size: 13px;
+      font-weight: 600;
+      color: var(--text-primary);
+    }
+
+    .setting-val-badge {
+      font-size: 12px;
+      font-weight: 700;
+      color: var(--accent-blue);
+      background: rgba(56, 189, 248, 0.12);
+      padding: 2px 8px;
+      border-radius: 6px;
+      border: 1px solid rgba(56, 189, 248, 0.3);
+    }
+
+    .range-slider {
+      -webkit-appearance: none;
+      appearance: none;
+      width: 100%;
+      height: 6px;
+      border-radius: 9999px;
+      background: #1e293b;
+      outline: none;
+      margin: 8px 0 4px 0;
+      touch-action: auto !important;
+    }
+
+    .range-slider::-webkit-slider-thumb {
+      -webkit-appearance: none;
+      appearance: none;
+      width: 22px;
+      height: 22px;
+      border-radius: 50%;
+      background: var(--accent-blue);
+      cursor: pointer;
+      box-shadow: 0 0 10px var(--accent-glow);
+      border: 2px solid #ffffff;
+      touch-action: auto !important;
+    }
+
+    .range-slider::-moz-range-thumb {
+      width: 22px;
+      height: 22px;
+      border-radius: 50%;
+      background: var(--accent-blue);
+      cursor: pointer;
+      box-shadow: 0 0 10px var(--accent-glow);
+      border: 2px solid #ffffff;
+    }
+
+    .range-bounds {
+      display: flex;
+      justify-content: space-between;
+      font-size: 10px;
+      color: var(--text-muted);
+    }
+
+    .toggle-item {
+      flex-direction: row;
+      align-items: center;
+      justify-content: space-between;
+    }
+
+    .toggle-text {
+      display: flex;
+      flex-direction: column;
+      gap: 2px;
+    }
+
+    .toggle-desc {
+      font-size: 11px;
+      color: var(--text-muted);
+    }
+
+    /* Switch Component */
+    .switch {
+      position: relative;
+      display: inline-block;
+      width: 48px;
+      height: 26px;
+      flex-shrink: 0;
+      touch-action: auto !important;
+    }
+
+    .switch input {
+      opacity: 0;
+      width: 0;
+      height: 0;
+      touch-action: auto !important;
+    }
+
+    .slider-round {
+      position: absolute;
+      cursor: pointer;
+      inset: 0;
+      background-color: #1e293b;
+      transition: .2s ease;
+      border-radius: 34px;
+      border: 1px solid var(--border-color);
+    }
+
+    .slider-round:before {
+      position: absolute;
+      content: "";
+      height: 18px;
+      width: 18px;
+      left: 3px;
+      bottom: 3px;
+      background-color: var(--text-muted);
+      transition: .2s ease;
+      border-radius: 50%;
+    }
+
+    .switch input:checked + .slider-round {
+      background-color: #0369a1;
+      border-color: var(--accent-blue);
+    }
+
+    .switch input:checked + .slider-round:before {
+      transform: translateX(22px);
+      background-color: #ffffff;
+    }
+
+    .btn-reset {
+      background: rgba(255, 255, 255, 0.05);
+      border: 1px solid var(--border-color);
+      border-radius: 8px;
+      color: var(--text-muted);
+      padding: 9px;
+      font-size: 12px;
+      cursor: pointer;
+      transition: all 0.15s ease;
+      margin-top: 2px;
+      touch-action: auto !important;
+    }
+
+    .btn-reset:active {
+      background: rgba(255, 255, 255, 0.12);
+      color: var(--text-primary);
+    }
+
+    /* Keyboard inputs */
+    .keyboard-panel input {
+      touch-action: auto !important;
+      user-select: text !important;
+      -webkit-user-select: text !important;
+      background: rgba(0, 0, 0, 0.4);
+      border: 1px solid var(--border-color);
+      border-radius: 8px;
+      padding: 9px 12px;
+      color: var(--text-primary);
+      font-size: 14px;
+      width: 100%;
+      outline: none;
+      transition: border-color 0.2s ease, box-shadow 0.2s ease;
+    }
+
+    .keyboard-panel input:focus {
+      border-color: var(--accent-blue);
+      box-shadow: 0 0 10px var(--accent-glow);
+    }
+
+    .kb-realtime-box {
+      position: relative;
+    }
+
+    .kb-batch-form {
+      display: flex;
+      gap: 8px;
+    }
+
+    .btn-send {
+      background: linear-gradient(135deg, #0284c7 0%, #0369a1 100%);
+      border: 1px solid rgba(56, 189, 248, 0.5);
+      border-radius: 8px;
+      color: #ffffff;
+      padding: 0 16px;
+      font-size: 13px;
+      font-weight: 600;
+      cursor: pointer;
+      white-space: nowrap;
+      transition: all 0.15s ease;
+    }
+
+    .btn-send:active {
+      transform: scale(0.95);
+      box-shadow: 0 0 12px var(--accent-glow);
+    }
+
+    /* Action Keys Row */
+    .kb-actions-grid {
+      display: grid;
+      grid-template-columns: repeat(5, 1fr);
+      gap: 6px;
+    }
+
+    .kb-key-btn {
+      background: #1e293b;
+      border: 1px solid var(--border-color);
+      border-radius: 8px;
+      color: var(--text-primary);
+      height: 38px;
+      font-size: 12px;
+      font-weight: 500;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+      box-shadow: 0 2px 6px rgba(0, 0, 0, 0.3);
+      transition: all 0.1s ease;
+      touch-action: none;
+    }
+
+    .kb-key-btn:active, .kb-key-btn.key-pressed {
+      transform: translateY(1px) scale(0.95);
+      background: #334155;
+      border-color: var(--accent-blue);
+      box-shadow: 0 0 10px var(--accent-glow);
+    }
+
+    .kb-key-btn.key-warn {
+      background: #2a1b24;
+      border-color: rgba(244, 63, 94, 0.3);
+      color: #fda4af;
+    }
+
+    .kb-key-btn.key-accent {
+      background: #172b3c;
+      border-color: rgba(56, 189, 248, 0.4);
+      color: #7dd3fc;
+    }
+
+    /* Arrow Cluster */
+    .kb-arrows-container {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 4px;
+      padding-top: 2px;
+    }
+
+    .kb-arrows-horiz {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 6px;
+      width: 100%;
+      max-width: 240px;
+    }
+
+    .arrow-btn {
+      height: 34px;
+      font-size: 13px;
+    }
+    
+    .arrow-btn-up {
+      width: 76px;
+      height: 34px;
+    }
+  </style>
+</head>
+<body>
+  <div id="app">
+    <!-- Top Bar -->
+    <header>
+      <div class="brand">
+        <div id="status-badge" class="status-badge">
+          <div class="indicator-dot"></div>
+          <span id="status-text">Connecting...</span>
+        </div>
+      </div>
+
+      <div class="header-actions">
+        <!-- Settings Toggle Button (⚙️) -->
+        <button id="settings-toggle-btn" class="icon-btn" aria-label="Settings" title="Settings & Sensitivity">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <circle cx="12" cy="12" r="3"></circle>
+            <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"></path>
+          </svg>
+        </button>
+
+        <!-- Keyboard Toggle Button -->
+        <button id="keyboard-toggle-btn" class="icon-btn" aria-label="Toggle Keyboard" title="Keyboard Controls">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <rect x="2" y="4" width="20" height="16" rx="2" ry="2"></rect>
+            <line x1="6" y1="8" x2="6.01" y2="8"></line>
+            <line x1="10" y1="8" x2="10.01" y2="8"></line>
+            <line x1="14" y1="8" x2="14.01" y2="8"></line>
+            <line x1="18" y1="8" x2="18.01" y2="8"></line>
+            <line x1="6" y1="12" x2="6.01" y2="12"></line>
+            <line x1="10" y1="12" x2="10.01" y2="12"></line>
+            <line x1="14" y1="12" x2="14.01" y2="12"></line>
+            <line x1="18" y1="12" x2="18.01" y2="12"></line>
+            <line x1="7" y1="16" x2="17" y2="16"></line>
+          </svg>
+        </button>
+
+        <!-- Fullscreen Button -->
+        <button id="fullscreen-btn" class="icon-btn" aria-label="Toggle Fullscreen" title="Toggle Fullscreen">
+          <svg id="fs-icon" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M8 3H5a2 2 0 0 0-2 2v3m18 0V5a2 2 0 0 0-2-2h-3m0 18h3a2 2 0 0 0 2-2v-3M3 16v3a2 2 0 0 0 2 2h3"></path>
+          </svg>
+        </button>
+      </div>
+    </header>
+
+    <!-- Trackpad Area -->
+    <main id="trackpad">
+      <div class="trackpad-guide">
+        <div class="guide-item">
+          <span class="guide-icon">👆</span>
+          <span>1 Finger : Move Cursor</span>
+        </div>
+        <div class="guide-item">
+          <span class="guide-icon">⚡</span>
+          <span>1 Tap : Left Click</span>
+        </div>
+        <div class="guide-item">
+          <span class="guide-icon">✌️</span>
+          <span>2 Fingers : Scroll</span>
+        </div>
+      </div>
+
+      <div id="scroll-overlay" class="scroll-overlay">
+        <span id="scroll-overlay-icon">↕️</span>
+        <span id="scroll-overlay-text">Scrolling</span>
+      </div>
+    </main>
+
+    <!-- Compact Volume / Media Bar -->
+    <div class="volume-bar">
+      <button id="btn-vol-down" class="vol-btn" type="button" aria-label="Volume Down">
+        <span class="vol-icon">🔉</span>
+        <span class="vol-label">Vol -</span>
+      </button>
+      <button id="btn-vol-mute" class="vol-btn vol-btn-mute" type="button" aria-label="Mute Volume">
+        <span class="vol-icon">🔇</span>
+        <span class="vol-label">Mute</span>
+      </button>
+      <button id="btn-vol-up" class="vol-btn" type="button" aria-label="Volume Up">
+        <span class="vol-icon">🔊</span>
+        <span class="vol-label">Vol +</span>
+      </button>
+    </div>
+
+    <!-- Dedicated Bottom Mouse Buttons (3-Column Layout: Left, Middle, Right) -->
+    <div class="mouse-buttons">
+      <button id="btn-left" class="mouse-btn" type="button">
+        <span class="btn-label">Left Click</span>
+        <span class="btn-sub">Primary</span>
+      </button>
+      <button id="btn-middle" class="mouse-btn" type="button">
+        <span class="btn-label">Middle Click</span>
+        <span class="btn-sub">Scroll / Tab</span>
+      </button>
+      <button id="btn-right" class="mouse-btn" type="button">
+        <span class="btn-label">Right Click</span>
+        <span class="btn-sub">Secondary</span>
+      </button>
+    </div>
+
+    <!-- Collapsible Settings Panel -->
+    <div id="settings-panel" class="drawer-panel">
+      <div class="panel-header">
+        <div class="panel-title">
+          <span>⚙️ Settings</span>
+          <span class="panel-sub">Sensitivity & Controls</span>
+        </div>
+        <button id="settings-close-btn" class="panel-close-btn" type="button" aria-label="Close Settings">✕</button>
+      </div>
+
+      <div class="settings-content">
+        <!-- Mouse Sensitivity Slider -->
+        <div class="setting-item">
+          <div class="setting-label-row">
+            <span class="setting-title">🖱️ Mouse Sensitivity</span>
+            <span id="mouse-sens-val" class="setting-val-badge">1.8x</span>
+          </div>
+          <input id="mouse-sens-slider" class="range-slider" type="range" min="0.5" max="4.0" step="0.1" value="1.8" />
+          <div class="range-bounds">
+            <span>Slow (0.5x)</span>
+            <span>Fast (4.0x)</span>
+          </div>
+        </div>
+
+        <!-- Scroll Sensitivity Slider -->
+        <div class="setting-item">
+          <div class="setting-label-row">
+            <span class="setting-title">📜 Scroll Sensitivity</span>
+            <span id="scroll-sens-val" class="setting-val-badge">12.0x</span>
+          </div>
+          <input id="scroll-sens-slider" class="range-slider" type="range" min="1.0" max="50.0" step="1.0" value="12.0" />
+          <div class="range-bounds">
+            <span>Normal (1x)</span>
+            <span>Ultra Fast (50x)</span>
+          </div>
+        </div>
+
+        <!-- Invert Scroll Toggle -->
+        <div class="setting-item toggle-item">
+          <div class="toggle-text">
+            <span class="setting-title">🔄 Invert Scroll Direction</span>
+            <span id="invert-desc" class="toggle-desc">Natural (swipe up = scroll down)</span>
+          </div>
+          <label class="switch">
+            <input id="invert-scroll-toggle" type="checkbox" />
+            <span class="slider-round"></span>
+          </label>
+        </div>
+
+        <!-- Reset Button -->
+        <button id="btn-reset-settings" class="btn-reset" type="button">Reset to Defaults</button>
+      </div>
+    </div>
+
+    <!-- Slide-up Keyboard Panel -->
+    <div id="keyboard-panel" class="drawer-panel keyboard-panel">
+      <div class="panel-header">
+        <div class="panel-title">
+          <span>⌨️ Remote Keyboard</span>
+          <span class="panel-sub">Mobile Input & Keys</span>
+        </div>
+        <button id="kb-close-btn" class="panel-close-btn" type="button" aria-label="Close Keyboard">✕</button>
+      </div>
+
+      <!-- Live Typing Field: Triggers mobile on-screen keyboard (Gboard/iOS) on tap -->
+      <div class="kb-realtime-box">
+        <input id="live-type-input" type="text" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false" placeholder="Tap here to type in real-time..." />
+      </div>
+
+      <!-- Batch text sender for complete sentences/URLs/passwords -->
+      <form id="batch-form" class="kb-batch-form" onsubmit="return false;">
+        <input id="batch-text-input" type="text" autocomplete="off" placeholder="Or enter full text / URL..." />
+        <button id="btn-send-text" class="btn-send" type="button">Send</button>
+      </form>
+
+      <!-- Quick Action Keys -->
+      <div class="kb-actions-grid">
+        <button class="kb-key-btn" data-key="Escape">Esc</button>
+        <button class="kb-key-btn" data-key="Tab">Tab</button>
+        <button class="kb-key-btn" data-key="Space">Space</button>
+        <button class="kb-key-btn key-warn" data-key="Backspace">⌫ Back</button>
+        <button class="kb-key-btn key-accent" data-key="Enter">↵ Enter</button>
+      </div>
+
+      <!-- Arrow Navigation Keys -->
+      <div class="kb-arrows-container">
+        <button class="kb-key-btn arrow-btn arrow-btn-up" data-key="ArrowUp" aria-label="Up">▲</button>
+        <div class="kb-arrows-horiz">
+          <button class="kb-key-btn arrow-btn" data-key="ArrowLeft" aria-label="Left">◀</button>
+          <button class="kb-key-btn arrow-btn" data-key="ArrowDown" aria-label="Down">▼</button>
+          <button class="kb-key-btn arrow-btn" data-key="ArrowRight" aria-label="Right">▶</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    (function () {
+      'use strict';
+
+      // Global touch prevention to stop native gestures, bounces, pull-to-refresh
+      window.addEventListener('touchmove', (e) => {
+        // Allow native touch interactions inside drawer inputs/sliders/labels
+        if (e.target.closest('#keyboard-panel input, #settings-panel input, #settings-panel label, .range-slider')) {
+          return;
+        }
+        e.preventDefault();
+      }, { passive: false });
+
+      window.addEventListener('touchstart', (e) => {
+        requestWakeLock();
+      }, { passive: true });
+
+      window.addEventListener('gesturestart', (e) => e.preventDefault());
+      window.addEventListener('contextmenu', (e) => {
+        if (!e.target.closest('#keyboard-panel input, #settings-panel input')) {
+          e.preventDefault();
+        }
+      });
+
+      // Screen Wake Lock API
+      let wakeLock = null;
+      async function requestWakeLock() {
+        if ('wakeLock' in navigator && !wakeLock) {
+          try {
+            wakeLock = await navigator.wakeLock.request('screen');
+            wakeLock.addEventListener('release', () => {
+              wakeLock = null;
+            });
+          } catch (err) {
+            // Wake Lock not granted or supported
+          }
+        }
+      }
+
+      document.addEventListener('visibilitychange', () => {
+        if (document.visibilityState === 'visible' && !wakeLock) {
+          requestWakeLock();
+        }
+      });
+
+      // WebSocket Connection with Auto-reconnect
+      const statusBadge = document.getElementById('status-badge');
+      const statusText = document.getElementById('status-text');
+      const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
+      const wsUrl = `${protocol}//${window.location.host}`;
+      let ws = null;
+      let reconnectTimer = null;
+
+      function updateStatus(connected) {
+        if (connected) {
+          statusBadge.classList.add('connected');
+          statusText.textContent = 'Connected';
+        } else {
+          statusBadge.classList.remove('connected');
+          statusText.textContent = 'Reconnecting...';
+        }
+      }
+
+      function connect() {
+        if (ws && (ws.readyState === WebSocket.OPEN || ws.readyState === WebSocket.CONNECTING)) {
+          return;
+        }
+
+        try {
+          ws = new WebSocket(wsUrl);
+
+          ws.onopen = () => {
+            updateStatus(true);
+            if (reconnectTimer) {
+              clearTimeout(reconnectTimer);
+              reconnectTimer = null;
+            }
+          };
+
+          ws.onclose = () => {
+            updateStatus(false);
+            scheduleReconnect();
+          };
+
+          ws.onerror = () => {
+            updateStatus(false);
+            try { ws.close(); } catch (_) {}
+          };
+        } catch (err) {
+          updateStatus(false);
+          scheduleReconnect();
+        }
+      }
+
+      function scheduleReconnect() {
+        if (!reconnectTimer) {
+          reconnectTimer = setTimeout(() => {
+            reconnectTimer = null;
+            connect();
+          }, 1500);
+        }
+      }
+
+      function send(payload) {
+        if (ws && ws.readyState === WebSocket.OPEN) {
+          ws.send(JSON.stringify(payload));
+        }
+      }
+
+      connect();
+
+      function handleHaptic(duration = 20) {
+        if ('vibrate' in navigator) {
+          try { navigator.vibrate(duration); } catch (_) {}
+        }
+      }
+
+      // Settings State & LocalStorage Persistence
+      const STORAGE_KEYS = {
+        MOUSE_SENS: 'remote_mouse_sens',
+        SCROLL_SENS: 'remote_scroll_sens',
+        INVERT_SCROLL: 'remote_invert_scroll'
+      };
+
+      const DEFAULT_MOUSE_SENS = 1.8;
+      const DEFAULT_SCROLL_SENS = 12.0;
+      const DEFAULT_INVERT_SCROLL = false;
+
+      function loadStoredFloat(key, defaultVal) {
+        const val = parseFloat(localStorage.getItem(key));
+        return isNaN(val) ? defaultVal : val;
+      }
+
+      let mouseSensitivity = loadStoredFloat(STORAGE_KEYS.MOUSE_SENS, DEFAULT_MOUSE_SENS);
+      let scrollSensitivity = loadStoredFloat(STORAGE_KEYS.SCROLL_SENS, DEFAULT_SCROLL_SENS);
+      // Automatically upgrade if previously saved with old low sensitivity (<= 3.0)
+      if (scrollSensitivity <= 3.0) {
+        scrollSensitivity = DEFAULT_SCROLL_SENS;
+        localStorage.setItem(STORAGE_KEYS.SCROLL_SENS, DEFAULT_SCROLL_SENS.toString());
+      }
+      let invertScroll = localStorage.getItem(STORAGE_KEYS.INVERT_SCROLL) === 'true';
+
+      const mouseSensSlider = document.getElementById('mouse-sens-slider');
+      const mouseSensVal = document.getElementById('mouse-sens-val');
+      const scrollSensSlider = document.getElementById('scroll-sens-slider');
+      const scrollSensVal = document.getElementById('scroll-sens-val');
+      const invertScrollToggle = document.getElementById('invert-scroll-toggle');
+      const invertDesc = document.getElementById('invert-desc');
+      const btnResetSettings = document.getElementById('btn-reset-settings');
+
+      function updateSettingsUI() {
+        mouseSensSlider.value = mouseSensitivity.toFixed(1);
+        mouseSensVal.textContent = mouseSensitivity.toFixed(1) + 'x';
+
+        scrollSensSlider.value = scrollSensitivity.toFixed(1);
+        scrollSensVal.textContent = scrollSensitivity.toFixed(1) + 'x';
+
+        invertScrollToggle.checked = invertScroll;
+        invertDesc.textContent = invertScroll 
+          ? 'Standard (swipe up = scroll up)' 
+          : 'Natural (swipe up = scroll down)';
+      }
+
+      updateSettingsUI();
+
+      mouseSensSlider.addEventListener('input', (e) => {
+        mouseSensitivity = parseFloat(e.target.value);
+        mouseSensVal.textContent = mouseSensitivity.toFixed(1) + 'x';
+        localStorage.setItem(STORAGE_KEYS.MOUSE_SENS, mouseSensitivity.toString());
+      });
+
+      scrollSensSlider.addEventListener('input', (e) => {
+        scrollSensitivity = parseFloat(e.target.value);
+        scrollSensVal.textContent = scrollSensitivity.toFixed(1) + 'x';
+        localStorage.setItem(STORAGE_KEYS.SCROLL_SENS, scrollSensitivity.toString());
+      });
+
+      invertScrollToggle.addEventListener('change', (e) => {
+        invertScroll = e.target.checked;
+        invertDesc.textContent = invertScroll 
+          ? 'Standard (swipe up = scroll up)' 
+          : 'Natural (swipe up = scroll down)';
+        localStorage.setItem(STORAGE_KEYS.INVERT_SCROLL, invertScroll.toString());
+        handleHaptic(15);
+      });
+
+      btnResetSettings.addEventListener('click', (e) => {
+        e.stopPropagation();
+        mouseSensitivity = DEFAULT_MOUSE_SENS;
+        scrollSensitivity = DEFAULT_SCROLL_SENS;
+        invertScroll = DEFAULT_INVERT_SCROLL;
+        localStorage.setItem(STORAGE_KEYS.MOUSE_SENS, mouseSensitivity.toString());
+        localStorage.setItem(STORAGE_KEYS.SCROLL_SENS, scrollSensitivity.toString());
+        localStorage.setItem(STORAGE_KEYS.INVERT_SCROLL, invertScroll.toString());
+        updateSettingsUI();
+        handleHaptic(25);
+      });
+
+      // Settings Drawer Toggle
+      const settingsToggleBtn = document.getElementById('settings-toggle-btn');
+      const settingsPanel = document.getElementById('settings-panel');
+      const settingsCloseBtn = document.getElementById('settings-close-btn');
+
+      function openSettings() {
+        closeKeyboard();
+        settingsPanel.classList.add('open');
+        settingsToggleBtn.classList.add('active');
+      }
+
+      function closeSettings() {
+        settingsPanel.classList.remove('open');
+        settingsToggleBtn.classList.remove('active');
+      }
+
+      settingsToggleBtn.addEventListener('click', (e) => {
+        e.stopPropagation();
+        if (settingsPanel.classList.contains('open')) {
+          closeSettings();
+        } else {
+          openSettings();
+        }
+      });
+
+      settingsCloseBtn.addEventListener('click', (e) => {
+        e.stopPropagation();
+        closeSettings();
+      });
+
+      // Fullscreen Toggle
+      const fullscreenBtn = document.getElementById('fullscreen-btn');
+      fullscreenBtn.addEventListener('click', (e) => {
+        e.stopPropagation();
+        if (!document.fullscreenElement) {
+          document.documentElement.requestFullscreen().catch(() => {});
+        } else {
+          document.exitFullscreen().catch(() => {});
+        }
+      });
+
+      // Trackpad Gesture Handling
+      const trackpad = document.getElementById('trackpad');
+      const scrollOverlay = document.getElementById('scroll-overlay');
+      const scrollOverlayText = document.getElementById('scroll-overlay-text');
+      let scrollOverlayTimer = null;
+
+      function showScrollIndicator(text) {
+        scrollOverlayText.textContent = text;
+        scrollOverlay.classList.add('visible');
+        clearTimeout(scrollOverlayTimer);
+        scrollOverlayTimer = setTimeout(() => {
+          scrollOverlay.classList.remove('visible');
+        }, 400);
+      }
+
+      // Visual touch trail
+      const touchIndicator = document.createElement('div');
+      touchIndicator.className = 'touch-point';
+      touchIndicator.style.display = 'none';
+      trackpad.appendChild(touchIndicator);
+
+      function createTapFlash(x, y) {
+        const flash = document.createElement('div');
+        flash.className = 'tap-flash';
+        flash.style.left = `${x}px`;
+        flash.style.top = `${y}px`;
+        trackpad.appendChild(flash);
+        setTimeout(() => flash.remove(), 320);
+      }
+
+      // Gesture State
+      let touchCount = 0;
+      let startX = 0;
+      let startY = 0;
+      let lastX = 0;
+      let lastY = 0;
+      let startTime = 0;
+      let totalDistance = 0;
+      let lastTwoFingerY = 0;
+      let twoFingerScrollAccumulator = 0;
+
+      trackpad.addEventListener('touchstart', (e) => {
+        e.preventDefault();
+        requestWakeLock();
+        trackpad.classList.add('active');
+        touchCount = e.touches.length;
+
+        const rect = trackpad.getBoundingClientRect();
+
+        if (touchCount === 1) {
+          const t = e.touches[0];
+          startX = t.clientX;
+          startY = t.clientY;
+          lastX = t.clientX;
+          lastY = t.clientY;
+          startTime = Date.now();
+          totalDistance = 0;
+
+          touchIndicator.style.display = 'block';
+          touchIndicator.style.left = `${t.clientX - rect.left}px`;
+          touchIndicator.style.top = `${t.clientY - rect.top}px`;
+        } else if (touchCount === 2) {
+          touchIndicator.style.display = 'none';
+          lastTwoFingerY = (e.touches[0].clientY + e.touches[1].clientY) / 2;
+          twoFingerScrollAccumulator = 0;
+        } else {
+          touchIndicator.style.display = 'none';
+        }
+      }, { passive: false });
+
+      trackpad.addEventListener('touchmove', (e) => {
+        e.preventDefault();
+        const currentTouchCount = e.touches.length;
+        const rect = trackpad.getBoundingClientRect();
+
+        if (currentTouchCount === 1) {
+          const t = e.touches[0];
+          const rawDx = t.clientX - lastX;
+          const rawDy = t.clientY - lastY;
+          totalDistance += Math.hypot(rawDx, rawDy);
+
+          // Apply configurable mouse sensitivity multiplier
+          const dx = rawDx * mouseSensitivity;
+          const dy = rawDy * mouseSensitivity;
+
+          lastX = t.clientX;
+          lastY = t.clientY;
+
+          touchIndicator.style.left = `${t.clientX - rect.left}px`;
+          touchIndicator.style.top = `${t.clientY - rect.top}px`;
+
+          if (Math.abs(dx) > 0.05 || Math.abs(dy) > 0.05) {
+            send({
+              type: 'move',
+              dx: Math.round(dx * 10) / 10,
+              dy: Math.round(dy * 10) / 10
+            });
+          }
+        } else if (currentTouchCount === 2) {
+          touchIndicator.style.display = 'none';
+          const currentTwoFingerY = (e.touches[0].clientY + e.touches[1].clientY) / 2;
+          const rawDeltaY = currentTwoFingerY - lastTwoFingerY;
+          lastTwoFingerY = currentTwoFingerY;
+
+          // Accumulate raw two-finger drag movement
+          twoFingerScrollAccumulator += rawDeltaY;
+
+          // Responsive chunk threshold (every 6px of finger drag triggers scroll)
+          const SCROLL_CHUNK_PX = 6;
+          if (Math.abs(twoFingerScrollAccumulator) >= SCROLL_CHUNK_PX) {
+            const rawDistance = Math.abs(twoFingerScrollAccumulator);
+            // High-power dynamic scaling: scales step count by scrollSensitivity
+            const steps = Math.max(1, Math.round((rawDistance / SCROLL_CHUNK_PX) * scrollSensitivity));
+            
+            // Invert scroll calculation:
+            // Natural (default): Drag fingers UP (accumulator < 0) => Scroll DOWN
+            // Standard (inverted): Drag fingers UP (accumulator < 0) => Scroll UP
+            let isDown = twoFingerScrollAccumulator < 0;
+            if (invertScroll) {
+              isDown = !isDown;
+            }
+
+            const direction = isDown ? 'down' : 'up';
+            const dy = isDown ? steps : -steps;
+
+            send({
+              type: 'scroll',
+              dy: dy,
+              direction: direction,
+              amount: steps
+            });
+
+            showScrollIndicator(direction === 'down' ? `Scroll Down ↓` : `Scroll Up ↑`);
+            twoFingerScrollAccumulator = 0;
+          }
+        }
+      }, { passive: false });
+
+      trackpad.addEventListener('touchend', (e) => {
+        e.preventDefault();
+        const rect = trackpad.getBoundingClientRect();
+
+        if (touchCount === 1 && e.touches.length === 0) {
+          const duration = Date.now() - startTime;
+          // Tap threshold: short duration and minimal finger movement
+          if (duration < 300 && totalDistance < 10) {
+            send({ type: 'click', button: 'left' });
+            handleHaptic(25);
+            createTapFlash(lastX - rect.left, lastY - rect.top);
+          }
+        }
+
+        touchCount = e.touches.length;
+        if (touchCount === 0) {
+          trackpad.classList.remove('active');
+          touchIndicator.style.display = 'none';
+        } else if (touchCount === 1) {
+          // One finger remains down, reset move baseline
+          const t = e.touches[0];
+          lastX = t.clientX;
+          lastY = t.clientY;
+          totalDistance = 100; // prevent tap on release of remaining finger
+        }
+      }, { passive: false });
+
+      trackpad.addEventListener('touchcancel', () => {
+        trackpad.classList.remove('active');
+        touchIndicator.style.display = 'none';
+        touchCount = 0;
+      });
+
+      // Dedicated Mouse Buttons Setup (Left, Middle, Right)
+      const btnLeft = document.getElementById('btn-left');
+      const btnMiddle = document.getElementById('btn-middle');
+      const btnRight = document.getElementById('btn-right');
+
+      function setupMouseButton(btn, buttonType) {
+        const triggerClick = (e) => {
+          e.preventDefault();
+          e.stopPropagation();
+          requestWakeLock();
+          btn.classList.add('btn-pressed');
+          handleHaptic(30);
+          send({ type: 'click', button: buttonType });
+
+          setTimeout(() => {
+            btn.classList.remove('btn-pressed');
+          }, 120);
+        };
+
+        btn.addEventListener('touchstart', triggerClick, { passive: false });
+        btn.addEventListener('mousedown', triggerClick);
+      }
+
+      setupMouseButton(btnLeft, 'left');
+      setupMouseButton(btnMiddle, 'middle');
+      setupMouseButton(btnRight, 'right');
+
+      // Master Volume Controls Setup
+      const btnVolDown = document.getElementById('btn-vol-down');
+      const btnVolMute = document.getElementById('btn-vol-mute');
+      const btnVolUp = document.getElementById('btn-vol-up');
+
+      function setupVolumeButton(btn, action) {
+        const triggerAction = (e) => {
+          e.preventDefault();
+          e.stopPropagation();
+          requestWakeLock();
+          btn.classList.add('btn-pressed');
+          handleHaptic(20);
+          send({ type: 'volume', action: action });
+
+          setTimeout(() => {
+            btn.classList.remove('btn-pressed');
+          }, 120);
+        };
+
+        btn.addEventListener('touchstart', triggerAction, { passive: false });
+        btn.addEventListener('mousedown', triggerAction);
+      }
+
+      setupVolumeButton(btnVolDown, 'down');
+      setupVolumeButton(btnVolMute, 'mute');
+      setupVolumeButton(btnVolUp, 'up');
+
+      // Keyboard Integration
+      const keyboardToggleBtn = document.getElementById('keyboard-toggle-btn');
+      const keyboardPanel = document.getElementById('keyboard-panel');
+      const kbCloseBtn = document.getElementById('kb-close-btn');
+      const liveTypeInput = document.getElementById('live-type-input');
+      const batchTextInput = document.getElementById('batch-text-input');
+      const btnSendText = document.getElementById('btn-send-text');
+
+      function openKeyboard() {
+        closeSettings();
+        keyboardPanel.classList.add('open');
+        keyboardToggleBtn.classList.add('active');
+      }
+
+      function closeKeyboard() {
+        keyboardPanel.classList.remove('open');
+        keyboardToggleBtn.classList.remove('active');
+        liveTypeInput.blur();
+        batchTextInput.blur();
+      }
+
+      keyboardToggleBtn.addEventListener('click', (e) => {
+        e.stopPropagation();
+        if (keyboardPanel.classList.contains('open')) {
+          closeKeyboard();
+        } else {
+          openKeyboard();
+          // Focus live input so virtual keyboard opens immediately
+          setTimeout(() => liveTypeInput.focus(), 150);
+        }
+      });
+
+      kbCloseBtn.addEventListener('click', (e) => {
+        e.stopPropagation();
+        closeKeyboard();
+      });
+
+      // Real-time Live Typing Handler
+      liveTypeInput.addEventListener('keydown', (e) => {
+        if (e.key === 'Backspace') {
+          e.preventDefault();
+          send({ type: 'keyboard_key', key: 'Backspace' });
+          handleHaptic(15);
+        } else if (e.key === 'Enter') {
+          e.preventDefault();
+          send({ type: 'keyboard_key', key: 'Enter' });
+          handleHaptic(20);
+        } else if (e.key === 'Tab') {
+          e.preventDefault();
+          send({ type: 'keyboard_key', key: 'Tab' });
+        } else if (e.key === 'Escape') {
+          e.preventDefault();
+          send({ type: 'keyboard_key', key: 'Escape' });
+        }
+      });
+
+      // Handle character input from mobile virtual keyboards
+      liveTypeInput.addEventListener('beforeinput', (e) => {
+        if (e.inputType === 'deleteContentBackward') {
+          send({ type: 'keyboard_key', key: 'Backspace' });
+          handleHaptic(15);
+        } else if (e.inputType === 'insertLineBreak') {
+          send({ type: 'keyboard_key', key: 'Enter' });
+          handleHaptic(20);
+        } else if (e.data) {
+          send({ type: 'keyboard_type', text: e.data });
+          handleHaptic(15);
+        }
+      });
+
+      liveTypeInput.addEventListener('input', () => {
+        // Clear field immediately to keep real-time typing synced
+        liveTypeInput.value = '';
+      });
+
+      // Batch Text Sender
+      function sendBatchText() {
+        const text = batchTextInput.value;
+        if (text && text.length > 0) {
+          send({ type: 'keyboard_type', text: text });
+          handleHaptic(25);
+          batchTextInput.value = '';
+        }
+      }
+
+      btnSendText.addEventListener('click', (e) => {
+        e.preventDefault();
+        sendBatchText();
+      });
+
+      batchTextInput.addEventListener('keydown', (e) => {
+        if (e.key === 'Enter') {
+          e.preventDefault();
+          sendBatchText();
+        }
+      });
+
+      // Quick Action Keys (Esc, Tab, Space, Backspace, Enter, Arrows)
+      const actionKeys = document.querySelectorAll('.kb-key-btn');
+      actionKeys.forEach((btn) => {
+        const key = btn.dataset.key;
+        if (!key) return;
+
+        const handleKeyPress = (e) => {
+          e.preventDefault();
+          e.stopPropagation();
+          btn.classList.add('key-pressed');
+          handleHaptic(20);
+          send({ type: 'keyboard_key', key: key });
+
+          setTimeout(() => {
+            btn.classList.remove('key-pressed');
+          }, 100);
+        };
+
+        btn.addEventListener('touchstart', handleKeyPress, { passive: false });
+        btn.addEventListener('mousedown', handleKeyPress);
+      });
+    })();
+  </script>
+</body>
+</html>
