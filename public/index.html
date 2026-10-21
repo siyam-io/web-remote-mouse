@@ -474,6 +474,150 @@
       opacity: 0.8;
     }
 
+    /* HTTPS Notice Banner */
+    .https-notice {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      background: rgba(239, 68, 68, 0.16);
+      border: 1px solid rgba(239, 68, 68, 0.45);
+      border-radius: 12px;
+      padding: 9px 12px;
+      width: 100%;
+      max-width: 320px;
+      box-shadow: 0 4px 16px rgba(0, 0, 0, 0.4);
+      z-index: 10;
+      animation: fadeIn 0.3s ease-out;
+    }
+
+    .https-notice-icon {
+      font-size: 20px;
+      flex-shrink: 0;
+    }
+
+    .https-notice-body {
+      display: flex;
+      flex-direction: column;
+      gap: 3px;
+      flex: 1;
+    }
+
+    .https-notice-title {
+      font-size: 11.5px;
+      font-weight: 700;
+      color: #fca5a5;
+    }
+
+    .https-notice-desc {
+      font-size: 10px;
+      color: #e2e8f0;
+      line-height: 1.3;
+    }
+
+    .btn-switch-https {
+      background: linear-gradient(135deg, #0284c7 0%, #0369a1 100%);
+      border: 1px solid var(--accent-blue);
+      border-radius: 6px;
+      color: #ffffff;
+      padding: 5px 9px;
+      font-size: 10.5px;
+      font-weight: 600;
+      cursor: pointer;
+      margin-top: 3px;
+      align-self: flex-start;
+      touch-action: auto !important;
+      transition: all 0.15s ease;
+    }
+
+    .btn-switch-https:active {
+      transform: scale(0.96);
+    }
+
+    /* Aim Mode Selector */
+    .air-aim-mode-toggle {
+      display: flex;
+      background: rgba(0, 0, 0, 0.4);
+      border: 1px solid var(--border-color);
+      border-radius: 9999px;
+      padding: 2px;
+      gap: 2px;
+      z-index: 9;
+    }
+
+    .aim-mode-btn {
+      background: transparent;
+      border: 1px solid transparent;
+      border-radius: 9999px;
+      color: var(--text-muted);
+      font-size: 10.5px;
+      font-weight: 600;
+      padding: 4px 10px;
+      cursor: pointer;
+      transition: all 0.15s ease;
+      touch-action: manipulation;
+    }
+
+    .aim-mode-btn.active {
+      background: #1e293b;
+      color: var(--accent-blue);
+      border-color: rgba(56, 189, 248, 0.4);
+      box-shadow: 0 0 10px var(--accent-glow);
+    }
+
+    /* Telemetry HUD */
+    .air-telemetry {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 3px;
+      background: rgba(0, 0, 0, 0.45);
+      border: 1px solid var(--border-color);
+      border-radius: 10px;
+      padding: 4px 12px;
+      font-size: 10.5px;
+      color: var(--text-muted);
+      pointer-events: none;
+      z-index: 9;
+    }
+
+    .telemetry-row {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      font-weight: 500;
+    }
+
+    .telemetry-dot {
+      width: 7px;
+      height: 7px;
+      border-radius: 50%;
+      background: var(--text-muted);
+    }
+
+    .telemetry-dot.dot-active {
+      background: var(--accent-green);
+      box-shadow: 0 0 8px var(--accent-green);
+      animation: pulse-dot 1.5s infinite;
+    }
+
+    .telemetry-dot.dot-error {
+      background: var(--accent-red);
+      box-shadow: 0 0 8px var(--accent-red);
+    }
+
+    .telemetry-dot.dot-waiting {
+      background: #eab308;
+      box-shadow: 0 0 6px #eab308;
+    }
+
+    .telemetry-stats {
+      display: flex;
+      gap: 12px;
+      font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+      font-size: 9.5px;
+      color: #cbd5e1;
+    }
+
     /* Visual touch point */
     .touch-point {
       position: absolute;
@@ -1088,9 +1232,23 @@
 
       <!-- Air Mouse View (Active in Air Mouse Mode) -->
       <div id="air-mouse-view" class="air-mouse-view">
+        <!-- Insecure Context (HTTP) Notice Banner -->
+        <div id="https-notice" class="https-notice" style="display: none;">
+          <div class="https-notice-icon">⚠️</div>
+          <div class="https-notice-body">
+            <span class="https-notice-title">HTTPS Required for Gyro</span>
+            <span class="https-notice-desc">Mobile browsers block motion sensors over HTTP.</span>
+            <button id="btn-switch-https" class="btn-switch-https" type="button">Switch to HTTPS (Port 3443)</button>
+          </div>
+        </div>
+
         <div class="air-header-info">
           <span class="air-mode-chip">🎯 AIR MOUSE</span>
-          <span class="air-mode-hint">Hold trigger & tilt phone to steer</span>
+          <!-- Aim Mode Toggle: Hold vs Toggle -->
+          <div class="air-aim-mode-toggle" role="tablist">
+            <button id="aim-mode-hold-btn" class="aim-mode-btn active" type="button" role="tab" title="Hold to steer, release to stop">🖐️ Hold to Aim</button>
+            <button id="aim-mode-toggle-btn" class="aim-mode-btn" type="button" role="tab" title="Tap once to start steering, tap again to stop">⚡ Toggle Aim</button>
+          </div>
         </div>
 
         <div id="air-trigger-pad" class="air-trigger-pad" role="button" aria-label="Hold to Aim">
@@ -1108,8 +1266,16 @@
           </div>
         </div>
 
-        <div class="air-footer-hints">
-          <span class="air-sub-hint">⚡ Quick tap trigger for Left Click</span>
+        <!-- Live Sensor Telemetry HUD -->
+        <div class="air-telemetry">
+          <div class="telemetry-row">
+            <span id="telemetry-sensor-dot" class="telemetry-dot dot-waiting"></span>
+            <span id="telemetry-status-text">Sensor: Checking...</span>
+          </div>
+          <div class="telemetry-stats">
+            <span id="telemetry-reading">Tilt X: 0.0° | Y: 0.0°</span>
+            <span id="telemetry-packets">Sent: 0</span>
+          </div>
         </div>
       </div>
 
@@ -1547,11 +1713,64 @@
 
       // Mode Switching: Trackpad vs Air Mouse
       let currentMode = 'trackpad'; // 'trackpad' | 'air'
+      let airAimBehavior = 'hold';  // 'hold' | 'toggle'
       const modeTrackpadBtn = document.getElementById('mode-trackpad-btn');
       const modeAirBtn = document.getElementById('mode-air-btn');
+      const airMouseView = document.getElementById('air-mouse-view');
       const airTriggerPad = document.getElementById('air-trigger-pad');
       const airTriggerPrimary = airTriggerPad.querySelector('.trigger-primary-label');
       const airTriggerStatus = airTriggerPad.querySelector('.trigger-status-label');
+      const httpsNotice = document.getElementById('https-notice');
+      const btnSwitchHttps = document.getElementById('btn-switch-https');
+      const aimModeHoldBtn = document.getElementById('aim-mode-hold-btn');
+      const aimModeToggleBtn = document.getElementById('aim-mode-toggle-btn');
+
+      // Telemetry HUD elements
+      const telemetrySensorDot = document.getElementById('telemetry-sensor-dot');
+      const telemetryStatusText = document.getElementById('telemetry-status-text');
+      const telemetryReading = document.getElementById('telemetry-reading');
+      const telemetryPackets = document.getElementById('telemetry-packets');
+      let totalPacketsSent = 0;
+      let totalOrientationEvents = 0;
+
+      // Secure Context check: Gyroscope requires HTTPS on mobile
+      const isSecureOrigin = window.isSecureContext || window.location.protocol === 'https:' || window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1';
+
+      if (btnSwitchHttps) {
+        btnSwitchHttps.addEventListener('click', (e) => {
+          e.preventDefault();
+          e.stopPropagation();
+          const targetPort = 3443;
+          window.location.href = `https://${window.location.hostname}:${targetPort}`;
+        });
+      }
+
+      // Aim Mode Switching: Hold vs Toggle
+      if (aimModeHoldBtn && aimModeToggleBtn) {
+        aimModeHoldBtn.addEventListener('click', (e) => {
+          e.preventDefault();
+          e.stopPropagation();
+          airAimBehavior = 'hold';
+          aimModeHoldBtn.classList.add('active');
+          aimModeToggleBtn.classList.remove('active');
+          if (isAiming) stopAiming();
+          airTriggerPrimary.textContent = 'HOLD TO AIM';
+          airTriggerStatus.textContent = 'Touch & hold to steer cursor';
+          handleHaptic(15);
+        });
+
+        aimModeToggleBtn.addEventListener('click', (e) => {
+          e.preventDefault();
+          e.stopPropagation();
+          airAimBehavior = 'toggle';
+          aimModeToggleBtn.classList.add('active');
+          aimModeHoldBtn.classList.remove('active');
+          if (isAiming) stopAiming();
+          airTriggerPrimary.textContent = 'TAP TO AIM';
+          airTriggerStatus.textContent = 'Tap to start / stop steering';
+          handleHaptic(15);
+        });
+      }
 
       // Gyroscope Motion State
       let isOrientationListening = false;
@@ -1562,7 +1781,7 @@
       let aimMotionDistance = 0;
 
       const GYRO_DEADZONE = 0.28; // Ignore hand jitter < 0.28 deg
-      const GYRO_SCALE_FACTOR = 8.5; // Smooth degree-to-cursor-pixel scaling
+      const GYRO_SCALE_FACTOR = 8.5; // Degree-to-cursor-pixel scaling
 
       async function requestDeviceOrientationPermission() {
         if (typeof DeviceOrientationEvent !== 'undefined' && typeof DeviceOrientationEvent.requestPermission === 'function') {
@@ -1578,14 +1797,25 @@
       }
 
       function handleOrientation(e) {
+        totalOrientationEvents++;
+
+        const currentGamma = e.gamma; // tilt left/right: -90 to 90
+        const currentBeta = e.beta;   // tilt front/back: -180 to 180
+
+        if (currentGamma !== null && currentBeta !== null && telemetryReading) {
+          telemetryReading.textContent = `γ: ${currentGamma.toFixed(1)}° | β: ${currentBeta.toFixed(1)}°`;
+        }
+
+        if (telemetrySensorDot && telemetryStatusText) {
+          telemetrySensorDot.className = 'telemetry-dot dot-active';
+          telemetryStatusText.textContent = isAiming ? 'Sensor: Steering PC Cursor' : 'Sensor: Active (Ready to Aim)';
+        }
+
         if (currentMode !== 'air' || !isAiming) {
           lastGamma = null;
           lastBeta = null;
           return;
         }
-
-        const currentGamma = e.gamma; // tilt left/right: -90 to 90
-        const currentBeta = e.beta;   // tilt front/back: -180 to 180
 
         if (currentGamma === null || currentBeta === null) return;
 
@@ -1627,6 +1857,48 @@
         const moveY = effDeltaY * gyroSensitivity * GYRO_SCALE_FACTOR;
 
         aimMotionDistance += Math.hypot(moveX, moveY);
+        totalPacketsSent++;
+        if (telemetryPackets) {
+          telemetryPackets.textContent = 'Sent: ' + totalPacketsSent;
+        }
+
+        send({
+          type: 'move',
+          dx: Math.round(moveX * 10) / 10,
+          dy: Math.round(moveY * 10) / 10
+        });
+      }
+
+      // Motion rate fallback for devices with devicemotion but no orientation
+      function handleMotion(e) {
+        if (totalOrientationEvents > 5) return; // Prefer orientation if active
+        if (!e.rotationRate) return;
+
+        const rot = e.rotationRate;
+        const rotX = rot.gamma || 0;
+        const rotY = rot.beta || 0;
+
+        if (telemetryReading) {
+          telemetryReading.textContent = `Rot X: ${rotX.toFixed(1)} | Y: ${rotY.toFixed(1)}`;
+        }
+
+        if (telemetrySensorDot && telemetryStatusText) {
+          telemetrySensorDot.className = 'telemetry-dot dot-active';
+          telemetryStatusText.textContent = isAiming ? 'Motion Sensor: Steering' : 'Motion: Active (Ready)';
+        }
+
+        if (currentMode !== 'air' || !isAiming) return;
+
+        if (Math.abs(rotX) < 1.0 && Math.abs(rotY) < 1.0) return;
+
+        const moveX = rotX * gyroSensitivity * 0.45;
+        const moveY = rotY * gyroSensitivity * 0.45;
+
+        aimMotionDistance += Math.hypot(moveX, moveY);
+        totalPacketsSent++;
+        if (telemetryPackets) {
+          telemetryPackets.textContent = 'Sent: ' + totalPacketsSent;
+        }
 
         send({
           type: 'move',
@@ -1637,14 +1909,32 @@
 
       function startOrientationTracking() {
         if (!isOrientationListening) {
-          window.addEventListener('deviceorientation', handleOrientation, true);
+          window.addEventListener('deviceorientation', handleOrientation, { passive: false });
+          window.addEventListener('deviceorientationabsolute', handleOrientation, { passive: false });
+          window.addEventListener('devicemotion', handleMotion, { passive: false });
           isOrientationListening = true;
+
+          // Check if events are arriving
+          setTimeout(() => {
+            if (totalOrientationEvents === 0) {
+              if (!isSecureOrigin) {
+                if (httpsNotice) httpsNotice.style.display = 'flex';
+                if (telemetrySensorDot) telemetrySensorDot.className = 'telemetry-dot dot-error';
+                if (telemetryStatusText) telemetryStatusText.textContent = '⚠️ Blocked: Switch to HTTPS (3443)';
+              } else {
+                if (telemetrySensorDot) telemetrySensorDot.className = 'telemetry-dot dot-waiting';
+                if (telemetryStatusText) telemetryStatusText.textContent = 'Sensor: Waiting for device motion...';
+              }
+            }
+          }, 800);
         }
       }
 
       function stopOrientationTracking() {
         if (isOrientationListening) {
-          window.removeEventListener('deviceorientation', handleOrientation, true);
+          window.removeEventListener('deviceorientation', handleOrientation);
+          window.removeEventListener('deviceorientationabsolute', handleOrientation);
+          window.removeEventListener('devicemotion', handleMotion);
           isOrientationListening = false;
         }
         lastGamma = null;
@@ -1655,11 +1945,17 @@
         if (mode === currentMode) return;
 
         if (mode === 'air') {
+          // If on insecure HTTP, warn the user prominently
+          if (!isSecureOrigin && httpsNotice) {
+            httpsNotice.style.display = 'flex';
+          }
+
           const granted = await requestDeviceOrientationPermission();
           if (!granted) {
-            alert('Motion sensor permission is required for Air Mouse mode.');
+            alert('Motion sensor permission is required for Air Mouse mode. If on iPhone or Chrome, please connect using HTTPS.');
             return;
           }
+
           currentMode = 'air';
           modeTrackpadBtn.classList.remove('active');
           modeTrackpadBtn.setAttribute('aria-selected', 'false');
@@ -1669,6 +1965,10 @@
           startOrientationTracking();
           requestWakeLock();
           handleHaptic(30);
+
+          if (telemetryStatusText) {
+            telemetryStatusText.textContent = isSecureOrigin ? 'Sensor: Checking...' : '⚠️ HTTP: Use HTTPS Port 3443';
+          }
         } else {
           currentMode = 'trackpad';
           modeAirBtn.classList.remove('active');
@@ -1695,8 +1995,10 @@
       // Air Mouse Trigger Pad Interaction
       function startAiming(e) {
         if (currentMode !== 'air') return;
-        e.preventDefault();
-        e.stopPropagation();
+        if (e) {
+          e.preventDefault();
+          e.stopPropagation();
+        }
         requestWakeLock();
 
         isAiming = true;
@@ -1707,7 +2009,10 @@
 
         airTriggerPad.classList.add('aiming-active');
         airTriggerPrimary.textContent = 'AIMING ACTIVE';
-        airTriggerStatus.textContent = 'Tilting steers cursor';
+        airTriggerStatus.textContent = airAimBehavior === 'toggle' ? 'Tap to freeze cursor' : 'Tilting steers cursor';
+        if (telemetryStatusText) {
+          telemetryStatusText.textContent = 'Sensor: Steering PC Cursor';
+        }
         handleHaptic(20);
       }
 
@@ -1719,16 +2024,20 @@
         }
 
         const duration = Date.now() - aimStartTime;
-        // Tap threshold: short duration and minimal motion triggers Left Click
-        const wasQuickTap = duration < 280 && aimMotionDistance < 12;
+        // Tap threshold: short duration and minimal motion triggers Left Click (only in hold mode)
+        const wasQuickTap = airAimBehavior === 'hold' && duration < 280 && aimMotionDistance < 12;
 
         isAiming = false;
         lastGamma = null;
         lastBeta = null;
 
         airTriggerPad.classList.remove('aiming-active');
-        airTriggerPrimary.textContent = 'HOLD TO AIM';
-        airTriggerStatus.textContent = 'Touch & hold to move pointer';
+        airTriggerPrimary.textContent = airAimBehavior === 'toggle' ? 'TAP TO AIM' : 'HOLD TO AIM';
+        airTriggerStatus.textContent = airAimBehavior === 'toggle' ? 'Tap to start / stop steering' : 'Touch & hold to move pointer';
+
+        if (telemetryStatusText) {
+          telemetryStatusText.textContent = 'Sensor: Active (Ready to Aim)';
+        }
 
         if (wasQuickTap) {
           send({ type: 'click', button: 'left' });
@@ -1738,14 +2047,58 @@
         }
       }
 
-      airTriggerPad.addEventListener('touchstart', startAiming, { passive: false });
-      airTriggerPad.addEventListener('touchend', stopAiming, { passive: false });
-      airTriggerPad.addEventListener('touchcancel', stopAiming, { passive: false });
+      // Allow aiming by touching either the central trigger pad OR anywhere on the air view
+      function handleAirTouchStart(e) {
+        if (currentMode !== 'air') return;
+        if (e.target.closest('.air-aim-mode-toggle, .btn-switch-https, .icon-btn')) return;
+
+        if (airAimBehavior === 'hold') {
+          startAiming(e);
+        }
+      }
+
+      function handleAirTouchEnd(e) {
+        if (currentMode !== 'air') return;
+        if (e.target.closest('.air-aim-mode-toggle, .btn-switch-https, .icon-btn')) return;
+
+        if (airAimBehavior === 'hold') {
+          stopAiming(e);
+        } else if (airAimBehavior === 'toggle') {
+          if (isAiming) {
+            stopAiming(e);
+          } else {
+            startAiming(e);
+          }
+        }
+      }
+
+      airTriggerPad.addEventListener('touchstart', handleAirTouchStart, { passive: false });
+      airTriggerPad.addEventListener('touchend', handleAirTouchEnd, { passive: false });
+      airTriggerPad.addEventListener('touchcancel', () => { if (isAiming && airAimBehavior === 'hold') stopAiming(); }, { passive: false });
+
+      // Expanded touch zone on airMouseView
+      airMouseView.addEventListener('touchstart', (e) => {
+        if (e.target === airMouseView) {
+          handleAirTouchStart(e);
+        }
+      }, { passive: false });
+
+      airMouseView.addEventListener('touchend', (e) => {
+        if (e.target === airMouseView) {
+          handleAirTouchEnd(e);
+        }
+      }, { passive: false });
 
       // Mouse event fallback for testing in desktop preview
-      airTriggerPad.addEventListener('mousedown', startAiming);
+      airTriggerPad.addEventListener('mousedown', (e) => {
+        if (airAimBehavior === 'hold') {
+          startAiming(e);
+        } else {
+          if (isAiming) stopAiming(e); else startAiming(e);
+        }
+      });
       window.addEventListener('mouseup', (e) => {
-        if (isAiming) stopAiming(e);
+        if (isAiming && airAimBehavior === 'hold') stopAiming(e);
       });
 
       // Gesture State

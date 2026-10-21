@@ -1,5 +1,6 @@
 const express = require('express');
 const http = require('http');
+const https = require('https');
 const path = require('path');
 const os = require('os');
 const { WebSocketServer } = require('ws');
@@ -7,24 +8,38 @@ const { mouse, Point, Button, keyboard, Key } = require('@nut-tree-fork/nut-js')
 const qrcode = require('qrcode-terminal');
 const { execFile } = require('child_process');
 const fs = require('fs');
+const selfsigned = require('selfsigned');
 
 const volumeExe = path.join(__dirname, 'bin', 'volume.exe');
+const CERT_DIR = path.join(__dirname, '.cert');
+const CERT_FILE = path.join(CERT_DIR, 'cert.pem');
+const KEY_FILE = path.join(CERT_DIR, 'key.pem');
 
 // Configure nut-js mouse and keyboard delays for responsive control
 mouse.config.autoDelayMs = 0;
 keyboard.config.autoDelayMs = 0;
 
-// Initialize Express app and HTTP server
+// Initialize Express app
 const app = express();
 const PORT = process.env.PORT || 3000;
+const HTTPS_PORT = process.env.HTTPS_PORT || 3443;
 
 // Serve static frontend files from ./public
 app.use(express.static(path.join(__dirname, 'public')));
 
-const server = http.createServer(app);
+// Create HTTP server
+const httpServer = http.createServer(app);
 
-// Initialize WebSocket server
-const wss = new WebSocketServer({ server });
+// Unified WebSocket server attached to both HTTP and HTTPS via upgrade
+const wss = new WebSocketServer({ noServer: true });
+
+function handleUpgrade(req, socket, head) {
+  wss.handleUpgrade(req, socket, head, (ws) => {
+    wss.emit('connection', ws, req);
+  });
+}
+
+httpServer.on('upgrade', handleUpgrade);
 
 // Queue / accumulator to prevent overlapping async mouse calls
 let isMoving = false;
@@ -213,28 +228,79 @@ function getLocalIpAddresses() {
   return list;
 }
 
-// Start HTTP and WebSocket server
-server.listen(PORT, '0.0.0.0', () => {
+// Generate or load cached SSL certificate for local HTTPS
+async function getOrCreateCert(primaryIp) {
+  try {
+    if (!fs.existsSync(CERT_DIR)) {
+      fs.mkdirSync(CERT_DIR, { recursive: true });
+    }
+
+    if (fs.existsSync(CERT_FILE) && fs.existsSync(KEY_FILE)) {
+      return {
+        cert: fs.readFileSync(CERT_FILE, 'utf8'),
+        key: fs.readFileSync(KEY_FILE, 'utf8')
+      };
+    }
+
+    const attrs = [{ name: 'commonName', value: primaryIp || 'localhost' }];
+    const pems = await selfsigned.generate(attrs, {
+      days: 365,
+      keySize: 2048,
+      algorithm: 'sha256'
+    });
+
+    fs.writeFileSync(CERT_FILE, pems.cert);
+    fs.writeFileSync(KEY_FILE, pems.private);
+
+    return { cert: pems.cert, key: pems.private };
+  } catch (err) {
+    console.error('[SSL Error] Failed to generate certificate:', err.message || err);
+    return null;
+  }
+}
+
+// Start HTTP and HTTPS servers
+(async () => {
   const detectedIps = getLocalIpAddresses();
   const primaryIp = detectedIps.length > 0 ? detectedIps[0].address : 'localhost';
-  const primaryUrl = `http://${primaryIp}:${PORT}`;
+  const httpUrl = `http://${primaryIp}:${PORT}`;
+  const httpsUrl = `https://${primaryIp}:${HTTPS_PORT}`;
 
-  console.log('\n=============================================================');
-  console.log('                 WEB REMOTE MOUSE SERVER                     ');
-  console.log('=============================================================');
-  console.log(`  Access URL:  ${primaryUrl}`);
-  console.log(`  Local URL:   http://localhost:${PORT}`);
+  // Start HTTP server
+  httpServer.listen(PORT, '0.0.0.0', () => {
+    console.log('\n=============================================================');
+    console.log('                 WEB REMOTE MOUSE SERVER                     ');
+    console.log('=============================================================');
+    console.log(`  Trackpad (HTTP):   ${httpUrl}`);
+    console.log(`  Localhost (HTTP):  http://localhost:${PORT}`);
+  });
 
-  if (detectedIps.length > 1) {
-    console.log('\n  Other available network addresses:');
-    detectedIps.slice(1).forEach((item) => {
-      console.log(`    - ${item.name}: http://${item.address}:${PORT}`);
-    });
+  // Try starting HTTPS server for Air Mouse / Gyroscope
+  const sslCreds = await getOrCreateCert(primaryIp);
+  if (sslCreds) {
+    try {
+      const httpsServer = https.createServer({ key: sslCreds.key, cert: sslCreds.cert }, app);
+      httpsServer.on('upgrade', handleUpgrade);
+      httpsServer.listen(HTTPS_PORT, '0.0.0.0', () => {
+        console.log(`  Air Mouse (HTTPS): ${httpsUrl}  [Required for Gyro]`);
+        console.log('-------------------------------------------------------------');
+        console.log('  Scan QR Code for Secure HTTPS (Enables Air Mouse & Gyro):');
+        console.log('  (On phone: tap "Advanced" -> "Proceed" to allow local cert)');
+        console.log('-------------------------------------------------------------');
+        qrcode.generate(httpsUrl, { small: true });
+        console.log('-------------------------------------------------------------');
+        console.log('  Server is running. Press Ctrl+C in this terminal to stop.\n');
+      });
+      httpsServer.on('error', (err) => {
+        console.warn(`[HTTPS Warning] Could not start HTTPS on port ${HTTPS_PORT}: ${err.message}`);
+        console.log('\n  Scan QR code for HTTP (Trackpad Mode):');
+        qrcode.generate(httpUrl, { small: true });
+      });
+    } catch (err) {
+      console.warn('[HTTPS Warning] SSL setup error:', err.message);
+    }
+  } else {
+    console.log('\n  Scan QR code for HTTP:');
+    qrcode.generate(httpUrl, { small: true });
   }
-
-  console.log('\n  Scan this QR code with your mobile phone camera:');
-  console.log('-------------------------------------------------------------');
-  qrcode.generate(primaryUrl, { small: true });
-  console.log('-------------------------------------------------------------');
-  console.log('  Server is running. Press Ctrl+C in this terminal to stop.\n');
-});
+})();
