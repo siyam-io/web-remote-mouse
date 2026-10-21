@@ -112,6 +112,48 @@
       50% { opacity: 0.7; transform: scale(1.15); }
     }
 
+    .mode-segmented-control {
+      display: flex;
+      align-items: center;
+      background: rgba(0, 0, 0, 0.45);
+      border: 1px solid var(--border-color);
+      border-radius: 9999px;
+      padding: 2px;
+      gap: 2px;
+    }
+
+    .mode-seg-btn {
+      display: inline-flex;
+      align-items: center;
+      gap: 5px;
+      padding: 5px 11px;
+      border-radius: 9999px;
+      border: 1px solid transparent;
+      background: transparent;
+      color: var(--text-muted);
+      font-size: 11px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+      white-space: nowrap;
+      touch-action: manipulation;
+    }
+
+    .mode-seg-btn.active {
+      background: #1e293b;
+      color: var(--accent-blue);
+      border-color: rgba(56, 189, 248, 0.35);
+      box-shadow: 0 0 12px var(--accent-glow);
+    }
+
+    .mode-seg-btn:active {
+      transform: scale(0.96);
+    }
+
+    .mode-icon {
+      font-size: 12px;
+    }
+
     .header-actions {
       display: flex;
       align-items: center;
@@ -192,6 +234,10 @@
       opacity: 0.06;
     }
 
+    #trackpad.air-mode .trackpad-guide {
+      display: none !important;
+    }
+
     .guide-item {
       display: flex;
       align-items: center;
@@ -202,6 +248,230 @@
 
     .guide-icon {
       font-size: 16px;
+    }
+
+    /* Air Mouse View & Central Aim Trigger */
+    .air-mouse-view {
+      display: none;
+      position: absolute;
+      inset: 0;
+      flex-direction: column;
+      align-items: center;
+      justify-content: space-between;
+      padding: 16px 14px;
+      z-index: 8;
+      pointer-events: auto;
+    }
+
+    #trackpad.air-mode .air-mouse-view {
+      display: flex;
+    }
+
+    .air-header-info {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 4px;
+      pointer-events: none;
+    }
+
+    .air-mode-chip {
+      font-size: 10.5px;
+      font-weight: 700;
+      letter-spacing: 1.2px;
+      color: var(--accent-blue);
+      background: rgba(56, 189, 248, 0.12);
+      border: 1px solid rgba(56, 189, 248, 0.35);
+      padding: 3px 10px;
+      border-radius: 9999px;
+      box-shadow: 0 0 12px var(--accent-glow);
+    }
+
+    .air-mode-hint {
+      font-size: 11px;
+      color: var(--text-muted);
+    }
+
+    /* Central Trigger Pad */
+    .air-trigger-pad {
+      position: relative;
+      width: min(72vw, 240px);
+      height: min(72vw, 240px);
+      border-radius: 50%;
+      background: radial-gradient(circle at 50% 50%, #1e293b 0%, #111827 75%, #0b0f19 100%);
+      border: 2px solid rgba(255, 255, 255, 0.12);
+      box-shadow: 0 8px 32px rgba(0, 0, 0, 0.6), inset 0 2px 8px rgba(255, 255, 255, 0.08);
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+      cursor: pointer;
+      user-select: none;
+      -webkit-user-select: none;
+      touch-action: none;
+      transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+    }
+
+    .air-trigger-pad:hover {
+      border-color: rgba(56, 189, 248, 0.3);
+    }
+
+    .air-trigger-pad.aiming-active {
+      transform: scale(0.96);
+      border-color: var(--accent-blue);
+      box-shadow: 0 0 35px var(--accent-glow), inset 0 0 25px rgba(56, 189, 248, 0.25);
+      background: radial-gradient(circle at 50% 50%, #1a365d 0%, #0f2744 60%, #081628 100%);
+    }
+
+    .air-reticle {
+      position: relative;
+      width: 76px;
+      height: 76px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      pointer-events: none;
+    }
+
+    .reticle-ring-outer {
+      position: absolute;
+      inset: 0;
+      border-radius: 50%;
+      border: 1.5px dashed rgba(56, 189, 248, 0.45);
+      transition: all 0.25s ease;
+      animation: rotate-reticle 20s linear infinite;
+    }
+
+    .air-trigger-pad.aiming-active .reticle-ring-outer {
+      border-color: var(--accent-blue);
+      border-style: solid;
+      box-shadow: 0 0 16px var(--accent-glow);
+      animation: rotate-reticle 6s linear infinite;
+    }
+
+    @keyframes rotate-reticle {
+      from { transform: rotate(0deg); }
+      to { transform: rotate(360deg); }
+    }
+
+    .reticle-ring-inner {
+      position: absolute;
+      width: 42px;
+      height: 42px;
+      border-radius: 50%;
+      border: 1px solid rgba(255, 255, 255, 0.25);
+      transition: all 0.2s ease;
+    }
+
+    .air-trigger-pad.aiming-active .reticle-ring-inner {
+      border-color: rgba(56, 189, 248, 0.8);
+      transform: scale(1.15);
+    }
+
+    .reticle-cross-h, .reticle-cross-v {
+      position: absolute;
+      background: rgba(255, 255, 255, 0.25);
+      transition: all 0.2s ease;
+    }
+
+    .reticle-cross-h {
+      width: 100%;
+      height: 1px;
+    }
+
+    .reticle-cross-v {
+      width: 1px;
+      height: 100%;
+    }
+
+    .air-trigger-pad.aiming-active .reticle-cross-h,
+    .air-trigger-pad.aiming-active .reticle-cross-v {
+      background: var(--accent-blue);
+      box-shadow: 0 0 8px var(--accent-blue);
+    }
+
+    .reticle-dot {
+      width: 10px;
+      height: 10px;
+      border-radius: 50%;
+      background: var(--text-muted);
+      transition: all 0.15s ease;
+      z-index: 2;
+    }
+
+    .air-trigger-pad.aiming-active .reticle-dot {
+      background: #38bdf8;
+      box-shadow: 0 0 14px #38bdf8, 0 0 24px var(--accent-glow);
+      transform: scale(1.35);
+    }
+
+    .reticle-pulse {
+      position: absolute;
+      inset: -6px;
+      border-radius: 50%;
+      border: 2px solid var(--accent-blue);
+      opacity: 0;
+      pointer-events: none;
+    }
+
+    .air-trigger-pad.aiming-active .reticle-pulse {
+      animation: reticle-pulse-anim 1.4s cubic-bezier(0.1, 0.8, 0.2, 1) infinite;
+    }
+
+    @keyframes reticle-pulse-anim {
+      0% {
+        transform: scale(0.85);
+        opacity: 0.8;
+      }
+      100% {
+        transform: scale(1.45);
+        opacity: 0;
+      }
+    }
+
+    .trigger-label-container {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 3px;
+      pointer-events: none;
+    }
+
+    .trigger-primary-label {
+      font-size: 13px;
+      font-weight: 700;
+      letter-spacing: 1.2px;
+      color: var(--text-primary);
+      transition: color 0.15s ease;
+    }
+
+    .air-trigger-pad.aiming-active .trigger-primary-label {
+      color: var(--accent-blue);
+      text-shadow: 0 0 10px var(--accent-glow);
+    }
+
+    .trigger-status-label {
+      font-size: 10.5px;
+      color: var(--text-muted);
+      letter-spacing: 0.3px;
+    }
+
+    .air-trigger-pad.aiming-active .trigger-status-label {
+      color: #93c5fd;
+    }
+
+    .air-footer-hints {
+      pointer-events: none;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .air-sub-hint {
+      font-size: 11.5px;
+      color: var(--text-muted);
+      opacity: 0.8;
     }
 
     /* Visual touch point */
@@ -713,6 +983,32 @@
       width: 76px;
       height: 34px;
     }
+
+    /* Small Screen Responsive Adaptations */
+    @media (max-width: 440px) {
+      header {
+        padding: 6px 8px;
+        gap: 4px;
+      }
+      .brand #status-text {
+        display: none;
+      }
+      .status-badge {
+        padding: 6px;
+      }
+      .mode-seg-btn {
+        padding: 4px 8px;
+        font-size: 10.5px;
+        gap: 3px;
+      }
+      .header-actions {
+        gap: 4px;
+      }
+      .icon-btn {
+        width: 32px;
+        height: 32px;
+      }
+    }
   </style>
 </head>
 <body>
@@ -724,6 +1020,18 @@
           <div class="indicator-dot"></div>
           <span id="status-text">Connecting...</span>
         </div>
+      </div>
+
+      <!-- Mode Toggle: Trackpad Mode | Air Mouse Mode -->
+      <div class="mode-segmented-control" role="tablist" aria-label="Control Mode">
+        <button id="mode-trackpad-btn" class="mode-seg-btn active" type="button" role="tab" aria-selected="true" title="Trackpad Mode">
+          <span class="mode-icon">👆</span>
+          <span class="mode-text">Trackpad</span>
+        </button>
+        <button id="mode-air-btn" class="mode-seg-btn" type="button" role="tab" aria-selected="false" title="Air Mouse (Gyro) Mode">
+          <span class="mode-icon">🎯</span>
+          <span class="mode-text">Air Mouse</span>
+        </button>
       </div>
 
       <div class="header-actions">
@@ -762,6 +1070,7 @@
 
     <!-- Trackpad Area -->
     <main id="trackpad">
+      <!-- Standard Trackpad Guide -->
       <div class="trackpad-guide">
         <div class="guide-item">
           <span class="guide-icon">👆</span>
@@ -774,6 +1083,33 @@
         <div class="guide-item">
           <span class="guide-icon">✌️</span>
           <span>2 Fingers : Scroll</span>
+        </div>
+      </div>
+
+      <!-- Air Mouse View (Active in Air Mouse Mode) -->
+      <div id="air-mouse-view" class="air-mouse-view">
+        <div class="air-header-info">
+          <span class="air-mode-chip">🎯 AIR MOUSE</span>
+          <span class="air-mode-hint">Hold trigger & tilt phone to steer</span>
+        </div>
+
+        <div id="air-trigger-pad" class="air-trigger-pad" role="button" aria-label="Hold to Aim">
+          <div class="air-reticle">
+            <div class="reticle-pulse"></div>
+            <div class="reticle-ring-outer"></div>
+            <div class="reticle-ring-inner"></div>
+            <div class="reticle-cross-h"></div>
+            <div class="reticle-cross-v"></div>
+            <div class="reticle-dot"></div>
+          </div>
+          <div class="trigger-label-container">
+            <span class="trigger-primary-label">HOLD TO AIM</span>
+            <span class="trigger-status-label">Touch & hold to move pointer</span>
+          </div>
+        </div>
+
+        <div class="air-footer-hints">
+          <span class="air-sub-hint">⚡ Quick tap trigger for Left Click</span>
         </div>
       </div>
 
@@ -849,6 +1185,19 @@
           <div class="range-bounds">
             <span>Normal (1x)</span>
             <span>Ultra Fast (50x)</span>
+          </div>
+        </div>
+
+        <!-- Gyroscope / Air Mouse Sensitivity Slider -->
+        <div class="setting-item">
+          <div class="setting-label-row">
+            <span class="setting-title">🎯 Gyro / Air Sensitivity</span>
+            <span id="gyro-sens-val" class="setting-val-badge">2.2x</span>
+          </div>
+          <input id="gyro-sens-slider" class="range-slider" type="range" min="0.5" max="5.0" step="0.1" value="2.2" />
+          <div class="range-bounds">
+            <span>Slow (0.5x)</span>
+            <span>Fast (5.0x)</span>
           </div>
         </div>
 
@@ -1032,12 +1381,14 @@
       const STORAGE_KEYS = {
         MOUSE_SENS: 'remote_mouse_sens',
         SCROLL_SENS: 'remote_scroll_sens',
-        INVERT_SCROLL: 'remote_invert_scroll'
+        INVERT_SCROLL: 'remote_invert_scroll',
+        GYRO_SENS: 'remote_gyro_sens'
       };
 
       const DEFAULT_MOUSE_SENS = 1.8;
       const DEFAULT_SCROLL_SENS = 12.0;
       const DEFAULT_INVERT_SCROLL = false;
+      const DEFAULT_GYRO_SENS = 2.2;
 
       function loadStoredFloat(key, defaultVal) {
         const val = parseFloat(localStorage.getItem(key));
@@ -1052,11 +1403,14 @@
         localStorage.setItem(STORAGE_KEYS.SCROLL_SENS, DEFAULT_SCROLL_SENS.toString());
       }
       let invertScroll = localStorage.getItem(STORAGE_KEYS.INVERT_SCROLL) === 'true';
+      let gyroSensitivity = loadStoredFloat(STORAGE_KEYS.GYRO_SENS, DEFAULT_GYRO_SENS);
 
       const mouseSensSlider = document.getElementById('mouse-sens-slider');
       const mouseSensVal = document.getElementById('mouse-sens-val');
       const scrollSensSlider = document.getElementById('scroll-sens-slider');
       const scrollSensVal = document.getElementById('scroll-sens-val');
+      const gyroSensSlider = document.getElementById('gyro-sens-slider');
+      const gyroSensVal = document.getElementById('gyro-sens-val');
       const invertScrollToggle = document.getElementById('invert-scroll-toggle');
       const invertDesc = document.getElementById('invert-desc');
       const btnResetSettings = document.getElementById('btn-reset-settings');
@@ -1067,6 +1421,9 @@
 
         scrollSensSlider.value = scrollSensitivity.toFixed(1);
         scrollSensVal.textContent = scrollSensitivity.toFixed(1) + 'x';
+
+        gyroSensSlider.value = gyroSensitivity.toFixed(1);
+        gyroSensVal.textContent = gyroSensitivity.toFixed(1) + 'x';
 
         invertScrollToggle.checked = invertScroll;
         invertDesc.textContent = invertScroll 
@@ -1088,6 +1445,12 @@
         localStorage.setItem(STORAGE_KEYS.SCROLL_SENS, scrollSensitivity.toString());
       });
 
+      gyroSensSlider.addEventListener('input', (e) => {
+        gyroSensitivity = parseFloat(e.target.value);
+        gyroSensVal.textContent = gyroSensitivity.toFixed(1) + 'x';
+        localStorage.setItem(STORAGE_KEYS.GYRO_SENS, gyroSensitivity.toString());
+      });
+
       invertScrollToggle.addEventListener('change', (e) => {
         invertScroll = e.target.checked;
         invertDesc.textContent = invertScroll 
@@ -1101,9 +1464,11 @@
         e.stopPropagation();
         mouseSensitivity = DEFAULT_MOUSE_SENS;
         scrollSensitivity = DEFAULT_SCROLL_SENS;
+        gyroSensitivity = DEFAULT_GYRO_SENS;
         invertScroll = DEFAULT_INVERT_SCROLL;
         localStorage.setItem(STORAGE_KEYS.MOUSE_SENS, mouseSensitivity.toString());
         localStorage.setItem(STORAGE_KEYS.SCROLL_SENS, scrollSensitivity.toString());
+        localStorage.setItem(STORAGE_KEYS.GYRO_SENS, gyroSensitivity.toString());
         localStorage.setItem(STORAGE_KEYS.INVERT_SCROLL, invertScroll.toString());
         updateSettingsUI();
         handleHaptic(25);
@@ -1180,6 +1545,209 @@
         setTimeout(() => flash.remove(), 320);
       }
 
+      // Mode Switching: Trackpad vs Air Mouse
+      let currentMode = 'trackpad'; // 'trackpad' | 'air'
+      const modeTrackpadBtn = document.getElementById('mode-trackpad-btn');
+      const modeAirBtn = document.getElementById('mode-air-btn');
+      const airTriggerPad = document.getElementById('air-trigger-pad');
+      const airTriggerPrimary = airTriggerPad.querySelector('.trigger-primary-label');
+      const airTriggerStatus = airTriggerPad.querySelector('.trigger-status-label');
+
+      // Gyroscope Motion State
+      let isOrientationListening = false;
+      let isAiming = false;
+      let lastGamma = null;
+      let lastBeta = null;
+      let aimStartTime = 0;
+      let aimMotionDistance = 0;
+
+      const GYRO_DEADZONE = 0.28; // Ignore hand jitter < 0.28 deg
+      const GYRO_SCALE_FACTOR = 8.5; // Smooth degree-to-cursor-pixel scaling
+
+      async function requestDeviceOrientationPermission() {
+        if (typeof DeviceOrientationEvent !== 'undefined' && typeof DeviceOrientationEvent.requestPermission === 'function') {
+          try {
+            const permissionState = await DeviceOrientationEvent.requestPermission();
+            return permissionState === 'granted';
+          } catch (err) {
+            console.warn('Orientation permission error:', err);
+            return false;
+          }
+        }
+        return true;
+      }
+
+      function handleOrientation(e) {
+        if (currentMode !== 'air' || !isAiming) {
+          lastGamma = null;
+          lastBeta = null;
+          return;
+        }
+
+        const currentGamma = e.gamma; // tilt left/right: -90 to 90
+        const currentBeta = e.beta;   // tilt front/back: -180 to 180
+
+        if (currentGamma === null || currentBeta === null) return;
+
+        // Establish clean baseline on first frame of aiming
+        if (lastGamma === null || lastBeta === null) {
+          lastGamma = currentGamma;
+          lastBeta = currentBeta;
+          return;
+        }
+
+        const rawDeltaGamma = currentGamma - lastGamma;
+        const rawDeltaBeta = currentBeta - lastBeta;
+
+        lastGamma = currentGamma;
+        lastBeta = currentBeta;
+
+        // Discontinuity filter (gimbal flip or sudden 180/360 wrap)
+        if (Math.abs(rawDeltaGamma) > 25 || Math.abs(rawDeltaBeta) > 25) {
+          return;
+        }
+
+        // Apply deadzone subtraction for ultra-smooth movement without sudden jump
+        let effDeltaX = 0;
+        if (Math.abs(rawDeltaGamma) > GYRO_DEADZONE) {
+          effDeltaX = rawDeltaGamma - Math.sign(rawDeltaGamma) * GYRO_DEADZONE;
+        }
+
+        let effDeltaY = 0;
+        if (Math.abs(rawDeltaBeta) > GYRO_DEADZONE) {
+          effDeltaY = rawDeltaBeta - Math.sign(rawDeltaBeta) * GYRO_DEADZONE;
+        }
+
+        if (effDeltaX === 0 && effDeltaY === 0) {
+          return;
+        }
+
+        // Multiply by gyro sensitivity and scale factor
+        const moveX = effDeltaX * gyroSensitivity * GYRO_SCALE_FACTOR;
+        const moveY = effDeltaY * gyroSensitivity * GYRO_SCALE_FACTOR;
+
+        aimMotionDistance += Math.hypot(moveX, moveY);
+
+        send({
+          type: 'move',
+          dx: Math.round(moveX * 10) / 10,
+          dy: Math.round(moveY * 10) / 10
+        });
+      }
+
+      function startOrientationTracking() {
+        if (!isOrientationListening) {
+          window.addEventListener('deviceorientation', handleOrientation, true);
+          isOrientationListening = true;
+        }
+      }
+
+      function stopOrientationTracking() {
+        if (isOrientationListening) {
+          window.removeEventListener('deviceorientation', handleOrientation, true);
+          isOrientationListening = false;
+        }
+        lastGamma = null;
+        lastBeta = null;
+      }
+
+      async function setMode(mode) {
+        if (mode === currentMode) return;
+
+        if (mode === 'air') {
+          const granted = await requestDeviceOrientationPermission();
+          if (!granted) {
+            alert('Motion sensor permission is required for Air Mouse mode.');
+            return;
+          }
+          currentMode = 'air';
+          modeTrackpadBtn.classList.remove('active');
+          modeTrackpadBtn.setAttribute('aria-selected', 'false');
+          modeAirBtn.classList.add('active');
+          modeAirBtn.setAttribute('aria-selected', 'true');
+          trackpad.classList.add('air-mode');
+          startOrientationTracking();
+          requestWakeLock();
+          handleHaptic(30);
+        } else {
+          currentMode = 'trackpad';
+          modeAirBtn.classList.remove('active');
+          modeAirBtn.setAttribute('aria-selected', 'false');
+          modeTrackpadBtn.classList.add('active');
+          modeTrackpadBtn.setAttribute('aria-selected', 'true');
+          trackpad.classList.remove('air-mode');
+          stopAiming();
+          stopOrientationTracking();
+          handleHaptic(20);
+        }
+      }
+
+      modeTrackpadBtn.addEventListener('click', (e) => {
+        e.preventDefault();
+        setMode('trackpad');
+      });
+
+      modeAirBtn.addEventListener('click', (e) => {
+        e.preventDefault();
+        setMode('air');
+      });
+
+      // Air Mouse Trigger Pad Interaction
+      function startAiming(e) {
+        if (currentMode !== 'air') return;
+        e.preventDefault();
+        e.stopPropagation();
+        requestWakeLock();
+
+        isAiming = true;
+        lastGamma = null;
+        lastBeta = null;
+        aimStartTime = Date.now();
+        aimMotionDistance = 0;
+
+        airTriggerPad.classList.add('aiming-active');
+        airTriggerPrimary.textContent = 'AIMING ACTIVE';
+        airTriggerStatus.textContent = 'Tilting steers cursor';
+        handleHaptic(20);
+      }
+
+      function stopAiming(e) {
+        if (!isAiming) return;
+        if (e) {
+          e.preventDefault();
+          e.stopPropagation();
+        }
+
+        const duration = Date.now() - aimStartTime;
+        // Tap threshold: short duration and minimal motion triggers Left Click
+        const wasQuickTap = duration < 280 && aimMotionDistance < 12;
+
+        isAiming = false;
+        lastGamma = null;
+        lastBeta = null;
+
+        airTriggerPad.classList.remove('aiming-active');
+        airTriggerPrimary.textContent = 'HOLD TO AIM';
+        airTriggerStatus.textContent = 'Touch & hold to move pointer';
+
+        if (wasQuickTap) {
+          send({ type: 'click', button: 'left' });
+          handleHaptic(25);
+          const rect = airTriggerPad.getBoundingClientRect();
+          createTapFlash(rect.width / 2, rect.height / 2);
+        }
+      }
+
+      airTriggerPad.addEventListener('touchstart', startAiming, { passive: false });
+      airTriggerPad.addEventListener('touchend', stopAiming, { passive: false });
+      airTriggerPad.addEventListener('touchcancel', stopAiming, { passive: false });
+
+      // Mouse event fallback for testing in desktop preview
+      airTriggerPad.addEventListener('mousedown', startAiming);
+      window.addEventListener('mouseup', (e) => {
+        if (isAiming) stopAiming(e);
+      });
+
       // Gesture State
       let touchCount = 0;
       let startX = 0;
@@ -1192,6 +1760,7 @@
       let twoFingerScrollAccumulator = 0;
 
       trackpad.addEventListener('touchstart', (e) => {
+        if (currentMode === 'air') return;
         e.preventDefault();
         requestWakeLock();
         trackpad.classList.add('active');
@@ -1221,6 +1790,7 @@
       }, { passive: false });
 
       trackpad.addEventListener('touchmove', (e) => {
+        if (currentMode === 'air') return;
         e.preventDefault();
         const currentTouchCount = e.touches.length;
         const rect = trackpad.getBoundingClientRect();
@@ -1289,6 +1859,7 @@
       }, { passive: false });
 
       trackpad.addEventListener('touchend', (e) => {
+        if (currentMode === 'air') return;
         e.preventDefault();
         const rect = trackpad.getBoundingClientRect();
 
@@ -1316,6 +1887,7 @@
       }, { passive: false });
 
       trackpad.addEventListener('touchcancel', () => {
+        if (currentMode === 'air') return;
         trackpad.classList.remove('active');
         touchIndicator.style.display = 'none';
         touchCount = 0;
