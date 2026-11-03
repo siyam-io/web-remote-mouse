@@ -1,0 +1,355 @@
+/* Air Mouse View & Central Aim Trigger */
+.air-mouse-view {
+  display: none;
+  position: absolute;
+  inset: 0;
+  flex-direction: column;
+  align-items: center;
+  justify-content: space-between;
+  padding: 16px 14px;
+  z-index: 8;
+  pointer-events: auto;
+}
+
+#trackpad.air-mode .air-mouse-view {
+  display: flex;
+}
+
+.air-header-info {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+  pointer-events: none;
+}
+
+.air-mode-chip {
+  font-size: 10.5px;
+  font-weight: 700;
+  letter-spacing: 1.2px;
+  color: var(--accent-blue);
+  background: rgba(56, 189, 248, 0.12);
+  border: 1px solid rgba(56, 189, 248, 0.35);
+  padding: 3px 10px;
+  border-radius: 9999px;
+  box-shadow: 0 0 12px var(--accent-glow);
+}
+
+.air-mode-hint {
+  font-size: 11px;
+  color: var(--text-muted);
+}
+
+/* Central Trigger Pad */
+.air-trigger-pad {
+  position: relative;
+  width: min(65vw, 220px);
+  height: min(65vw, 220px);
+  border-radius: 50%;
+  background: radial-gradient(circle at 50% 50%, #1e293b 0%, #111827 75%, #0b0f19 100%);
+  border: 2px solid rgba(255, 255, 255, 0.12);
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.6), inset 0 2px 8px rgba(255, 255, 255, 0.08);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  cursor: pointer;
+  user-select: none;
+  -webkit-user-select: none;
+  touch-action: none;
+  transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.air-trigger-pad:hover {
+  border-color: rgba(56, 189, 248, 0.3);
+}
+
+.air-trigger-pad.aiming-active {
+  transform: scale(0.96);
+  border-color: var(--accent-blue);
+  box-shadow: 0 0 35px var(--accent-glow), inset 0 0 25px rgba(56, 189, 248, 0.25);
+  background: radial-gradient(circle at 50% 50%, #1a365d 0%, #0f2744 60%, #081628 100%);
+}
+
+.air-reticle {
+  position: relative;
+  width: 76px;
+  height: 76px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  pointer-events: none;
+}
+
+.reticle-ring-outer {
+  position: absolute;
+  inset: 0;
+  border-radius: 50%;
+  border: 1.5px dashed rgba(56, 189, 248, 0.45);
+  transition: all 0.25s ease;
+  animation: rotate-reticle 20s linear infinite;
+}
+
+.air-trigger-pad.aiming-active .reticle-ring-outer {
+  border-color: var(--accent-blue);
+  border-style: solid;
+  box-shadow: 0 0 16px var(--accent-glow);
+  animation: rotate-reticle 6s linear infinite;
+}
+
+@keyframes rotate-reticle {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
+}
+
+.reticle-ring-inner {
+  position: absolute;
+  width: 42px;
+  height: 42px;
+  border-radius: 50%;
+  border: 1px solid rgba(255, 255, 255, 0.25);
+  transition: all 0.2s ease;
+}
+
+.air-trigger-pad.aiming-active .reticle-ring-inner {
+  border-color: rgba(56, 189, 248, 0.8);
+  transform: scale(1.15);
+}
+
+.reticle-cross-h, .reticle-cross-v {
+  position: absolute;
+  background: rgba(255, 255, 255, 0.25);
+  transition: all 0.2s ease;
+}
+
+.reticle-cross-h {
+  width: 100%;
+  height: 1px;
+}
+
+.reticle-cross-v {
+  width: 1px;
+  height: 100%;
+}
+
+.air-trigger-pad.aiming-active .reticle-cross-h,
+.air-trigger-pad.aiming-active .reticle-cross-v {
+  background: var(--accent-blue);
+  box-shadow: 0 0 8px var(--accent-blue);
+}
+
+.reticle-dot {
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  background: var(--text-muted);
+  transition: all 0.15s ease;
+  z-index: 2;
+}
+
+.air-trigger-pad.aiming-active .reticle-dot {
+  background: #38bdf8;
+  box-shadow: 0 0 14px #38bdf8, 0 0 24px var(--accent-glow);
+  transform: scale(1.35);
+}
+
+.reticle-pulse {
+  position: absolute;
+  inset: -6px;
+  border-radius: 50%;
+  border: 2px solid var(--accent-blue);
+  opacity: 0;
+  pointer-events: none;
+}
+
+.air-trigger-pad.aiming-active .reticle-pulse {
+  animation: reticle-pulse-anim 1.4s cubic-bezier(0.1, 0.8, 0.2, 1) infinite;
+}
+
+@keyframes reticle-pulse-anim {
+  0% {
+    transform: scale(0.85);
+    opacity: 0.8;
+  }
+  100% {
+    transform: scale(1.45);
+    opacity: 0;
+  }
+}
+
+.trigger-label-container {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 3px;
+  pointer-events: none;
+}
+
+.trigger-primary-label {
+  font-size: 13px;
+  font-weight: 700;
+  letter-spacing: 1.2px;
+  color: var(--text-primary);
+  transition: color 0.15s ease;
+}
+
+.air-trigger-pad.aiming-active .trigger-primary-label {
+  color: var(--accent-blue);
+  text-shadow: 0 0 10px var(--accent-glow);
+}
+
+.trigger-status-label {
+  font-size: 10.5px;
+  color: var(--text-muted);
+  letter-spacing: 0.3px;
+}
+
+.air-trigger-pad.aiming-active .trigger-status-label {
+  color: #93c5fd;
+}
+
+/* HTTPS Notice Banner */
+.https-notice {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  background: rgba(239, 68, 68, 0.16);
+  border: 1px solid rgba(239, 68, 68, 0.45);
+  border-radius: 12px;
+  padding: 9px 12px;
+  width: 100%;
+  max-width: 320px;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.4);
+  z-index: 10;
+  animation: fadeIn 0.3s ease-out;
+}
+
+.https-notice-icon {
+  font-size: 20px;
+  flex-shrink: 0;
+}
+
+.https-notice-body {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  flex: 1;
+}
+
+.https-notice-title {
+  font-size: 11.5px;
+  font-weight: 700;
+  color: #fca5a5;
+}
+
+.https-notice-desc {
+  font-size: 10px;
+  color: #e2e8f0;
+  line-height: 1.3;
+}
+
+.btn-switch-https {
+  background: linear-gradient(135deg, #0284c7 0%, #0369a1 100%);
+  border: 1px solid var(--accent-blue);
+  border-radius: 6px;
+  color: #ffffff;
+  padding: 5px 9px;
+  font-size: 10.5px;
+  font-weight: 600;
+  cursor: pointer;
+  margin-top: 3px;
+  align-self: flex-start;
+  touch-action: auto !important;
+  transition: all 0.15s ease;
+}
+
+.btn-switch-https:active {
+  transform: scale(0.96);
+}
+
+/* Aim Mode Selector */
+.air-aim-mode-toggle {
+  display: flex;
+  background: rgba(0, 0, 0, 0.4);
+  border: 1px solid var(--border-color);
+  border-radius: 9999px;
+  padding: 2px;
+  gap: 2px;
+  z-index: 9;
+}
+
+.aim-mode-btn {
+  background: transparent;
+  border: 1px solid transparent;
+  border-radius: 9999px;
+  color: var(--text-muted);
+  font-size: 10.5px;
+  font-weight: 600;
+  padding: 4px 10px;
+  cursor: pointer;
+  transition: all 0.15s ease;
+  touch-action: manipulation;
+}
+
+.aim-mode-btn.active {
+  background: #1e293b;
+  color: var(--accent-blue);
+  border-color: rgba(56, 189, 248, 0.4);
+  box-shadow: 0 0 10px var(--accent-glow);
+}
+
+/* Telemetry HUD */
+.air-telemetry {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 3px;
+  background: rgba(0, 0, 0, 0.45);
+  border: 1px solid var(--border-color);
+  border-radius: 10px;
+  padding: 4px 12px;
+  font-size: 10.5px;
+  color: var(--text-muted);
+  pointer-events: none;
+  z-index: 9;
+}
+
+.telemetry-row {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-weight: 500;
+}
+
+.telemetry-dot {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: var(--text-muted);
+}
+
+.telemetry-dot.dot-active {
+  background: var(--accent-green);
+  box-shadow: 0 0 8px var(--accent-green);
+  animation: pulse-dot 1.5s infinite;
+}
+
+.telemetry-dot.dot-error {
+  background: var(--accent-red);
+  box-shadow: 0 0 8px var(--accent-red);
+}
+
+.telemetry-dot.dot-waiting {
+  background: #eab308;
+  box-shadow: 0 0 6px #eab308;
+}
+
+.telemetry-stats {
+  display: flex;
+  gap: 12px;
+  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+  font-size: 9.5px;
+  color: #cbd5e1;
+}
+

@@ -1,0 +1,193 @@
+/* Trackpad Container (Holds Trackpad + Right-side Shorts Rail) */
+.trackpad-container {
+  flex: 1;
+  display: flex;
+  gap: 8px;
+  margin: 10px 10px 4px 10px;
+  position: relative;
+  overflow: hidden;
+}
+
+/* Trackpad Main Area */
+#trackpad {
+  flex: 1;
+  position: relative;
+  background: rgba(19, 25, 38, 0.55);
+  border-radius: 16px;
+  border: 1px solid var(--border-color);
+  box-shadow: inset 0 2px 10px rgba(0, 0, 0, 0.4), 0 8px 32px rgba(0, 0, 0, 0.3);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+  cursor: crosshair;
+  transition: border-color 0.2s ease;
+}
+
+#trackpad.active {
+  border-color: var(--border-accent);
+  box-shadow: inset 0 2px 14px rgba(0, 0, 0, 0.5), 0 0 20px var(--accent-glow);
+}
+
+/* Subtle grid pattern in trackpad background */
+#trackpad::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background-image: radial-gradient(circle, rgba(255, 255, 255, 0.05) 1px, transparent 1px);
+  background-size: 24px 24px;
+  opacity: 0.6;
+  pointer-events: none;
+}
+
+.trackpad-guide {
+  pointer-events: none;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 10px;
+  color: var(--text-muted);
+  opacity: 0.35;
+  transition: opacity 0.3s ease;
+  text-align: center;
+}
+
+#trackpad.active .trackpad-guide {
+  opacity: 0.06;
+}
+
+#trackpad.air-mode .trackpad-guide {
+  display: none !important;
+}
+
+.guide-item {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 12px;
+  letter-spacing: 0.4px;
+}
+
+.guide-icon {
+  font-size: 16px;
+}
+
+/* Right-side Shorts Video Navigation Rail (2 Icons) */
+.shorts-rail {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  gap: 12px;
+  width: 52px;
+  z-index: 6;
+}
+
+.rail-btn {
+  flex: 1;
+  max-height: 130px;
+  min-height: 70px;
+  background: rgba(19, 25, 38, 0.7);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+  border: 1px solid var(--border-color);
+  border-radius: 14px;
+  color: var(--text-primary);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+  transition: all 0.15s cubic-bezier(0.16, 1, 0.3, 1);
+  touch-action: none;
+  user-select: none;
+  -webkit-user-select: none;
+}
+
+.rail-btn.rail-prev {
+  border-color: rgba(56, 189, 248, 0.35);
+  background: linear-gradient(180deg, rgba(56, 189, 248, 0.12) 0%, rgba(30, 41, 59, 0.6) 100%);
+}
+
+.rail-btn.rail-next {
+  border-color: rgba(244, 63, 94, 0.45);
+  background: linear-gradient(180deg, rgba(30, 41, 59, 0.6) 0%, rgba(225, 29, 72, 0.22) 100%);
+}
+
+.rail-btn:active, .rail-btn.btn-pressed {
+  transform: scale(0.92);
+  border-color: var(--accent-blue);
+  box-shadow: 0 0 16px var(--accent-glow);
+  color: #ffffff;
+  background: #1e293b;
+}
+
+.rail-btn svg {
+  transition: transform 0.15s ease;
+}
+
+.rail-btn:active svg {
+  transform: scale(1.2);
+}
+
+/* Visual touch point */
+.touch-point {
+  position: absolute;
+  width: 44px;
+  height: 44px;
+  border-radius: 50%;
+  background: radial-gradient(circle, rgba(56, 189, 248, 0.6) 0%, rgba(56, 189, 248, 0) 70%);
+  border: 1.5px solid rgba(56, 189, 248, 0.8);
+  pointer-events: none;
+  transform: translate(-50%, -50%) scale(1);
+  transition: transform 0.05s ease-out;
+  z-index: 5;
+}
+
+/* Tap feedback flash */
+.tap-flash {
+  position: absolute;
+  width: 54px;
+  height: 54px;
+  border-radius: 50%;
+  background: rgba(56, 189, 248, 0.4);
+  transform: translate(-50%, -50%) scale(0.4);
+  animation: tap-expand 0.3s cubic-bezier(0.1, 0.8, 0.2, 1) forwards;
+  pointer-events: none;
+  z-index: 7;
+}
+
+@keyframes tap-expand {
+  to {
+    transform: translate(-50%, -50%) scale(1.6);
+    opacity: 0;
+  }
+}
+
+/* Scroll feedback indicator overlay */
+.scroll-overlay {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  background: rgba(0, 0, 0, 0.75);
+  border: 1px solid var(--border-accent);
+  border-radius: 12px;
+  padding: 8px 16px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 13px;
+  color: var(--accent-blue);
+  pointer-events: none;
+  opacity: 0;
+  transition: opacity 0.15s ease;
+  z-index: 6;
+}
+
+.scroll-overlay.visible {
+  opacity: 1;
+}
+

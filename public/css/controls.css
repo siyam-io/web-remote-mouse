@@ -1,0 +1,98 @@
+/* Compact Volume Bar directly above mouse buttons */
+.volume-bar {
+  display: grid;
+  grid-template-columns: 1fr 1fr 1fr;
+  gap: 8px;
+  padding: 0 10px 4px 10px;
+  height: 38px;
+  z-index: 5;
+}
+
+.vol-btn {
+  background: rgba(30, 41, 59, 0.7);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+  border: 1px solid var(--border-color);
+  border-radius: 10px;
+  color: var(--text-primary);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 5px;
+  font-size: 12px;
+  font-weight: 500;
+  cursor: pointer;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.25);
+  transition: all 0.1s ease;
+  touch-action: none;
+}
+
+.vol-btn:active, .vol-btn.btn-pressed {
+  transform: translateY(1px) scale(0.96);
+  background: rgba(51, 65, 85, 0.9);
+  border-color: var(--accent-blue);
+  box-shadow: 0 0 10px var(--accent-glow);
+  color: #ffffff;
+}
+
+.vol-btn.vol-btn-mute:active, .vol-btn.vol-btn-mute.btn-pressed {
+  border-color: var(--accent-red);
+  box-shadow: 0 0 10px rgba(239, 68, 68, 0.4);
+}
+
+.vol-icon {
+  font-size: 13px;
+}
+
+.vol-label {
+  font-size: 11px;
+  letter-spacing: 0.3px;
+}
+
+/* Bottom Mouse Buttons (3-column layout: Left, Middle, Right) */
+.mouse-buttons {
+  display: grid;
+  grid-template-columns: 1fr 1fr 1fr;
+  gap: 8px;
+  padding: 4px 10px 12px 10px;
+  height: 80px;
+  z-index: 5;
+}
+
+.mouse-btn {
+  background: linear-gradient(180deg, #1e293b 0%, #151d2c 100%);
+  border: 1px solid var(--border-color);
+  border-radius: 12px;
+  color: var(--text-primary);
+  font-size: 14px;
+  font-weight: 600;
+  letter-spacing: 0.4px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 3px;
+  cursor: pointer;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.35);
+  transition: all 0.1s ease;
+  touch-action: none;
+}
+
+.mouse-btn span.btn-label {
+  font-size: 13px;
+}
+
+.mouse-btn span.btn-sub {
+  font-size: 10px;
+  color: var(--text-muted);
+  font-weight: 400;
+}
+
+.mouse-btn:active, .mouse-btn.btn-pressed {
+  transform: translateY(2px) scale(0.97);
+  background: linear-gradient(180deg, #2b394f 0%, #1d273a 100%);
+  border-color: var(--accent-blue);
+  box-shadow: 0 0 14px var(--accent-glow);
+  color: #ffffff;
+}
+

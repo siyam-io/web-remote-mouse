@@ -1,6 +1,11 @@
 @echo off
 title Remote Mouse Server
 cd /d "%~dp0"
+if not exist "server.js" (
+    if exist "D:\pg\web_app\mouse\server.js" (
+        cd /d "D:\pg\web_app\mouse"
+    )
+)
 
 echo ========================================================
 echo               Web Remote Mouse Launcher

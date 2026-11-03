@@ -61,6 +61,12 @@ namespace RemoteMouse {
         [DllImport("user32.dll")]
         static extern void keybd_event(byte bVk, byte bScan, uint dwFlags, UIntPtr dwExtraInfo);
 
+        [DllImport("user32.dll")]
+        static extern uint MapVirtualKey(uint uCode, uint uMapType);
+
+        [DllImport("user32.dll")]
+        static extern short VkKeyScan(char ch);
+
         [DllImport("user32.dll", SetLastError = true)]
         static extern uint SendInput(uint nInputs, [In] INPUT[] pInputs, int cbSize);
 
@@ -80,8 +86,13 @@ namespace RemoteMouse {
         const byte VK_BACK = 0x08;
         const byte VK_TAB = 0x09;
         const byte VK_RETURN = 0x0D;
+        const byte VK_SHIFT = 0x10;
         const byte VK_ESCAPE = 0x1B;
         const byte VK_SPACE = 0x20;
+        const byte VK_PRIOR = 0x21; // Page Up
+        const byte VK_NEXT = 0x22;  // Page Down
+        const byte VK_END = 0x23;
+        const byte VK_HOME = 0x24;
         const byte VK_LEFT = 0x25;
         const byte VK_UP = 0x26;
         const byte VK_RIGHT = 0x27;
@@ -96,7 +107,21 @@ namespace RemoteMouse {
         [StructLayout(LayoutKind.Explicit)]
         struct InputUnion {
             [FieldOffset(0)]
+            public MOUSEINPUT mi;
+            [FieldOffset(0)]
             public KEYBDINPUT ki;
+            [FieldOffset(0)]
+            public HARDWAREINPUT hi;
+        }
+
+        [StructLayout(LayoutKind.Sequential)]
+        struct MOUSEINPUT {
+            public int dx;
+            public int dy;
+            public uint mouseData;
+            public uint dwFlags;
+            public uint time;
+            public IntPtr dwExtraInfo;
         }
 
         [StructLayout(LayoutKind.Sequential)]
@@ -105,7 +130,14 @@ namespace RemoteMouse {
             public ushort wScan;
             public uint dwFlags;
             public uint time;
-            public UIntPtr dwExtraInfo;
+            public IntPtr dwExtraInfo;
+        }
+
+        [StructLayout(LayoutKind.Sequential)]
+        struct HARDWAREINPUT {
+            public uint uMsg;
+            public ushort wParamL;
+            public ushort wParamH;
         }
 
         static IAudioEndpointVolume _audio;
@@ -155,22 +187,33 @@ namespace RemoteMouse {
             inputs[0].u.ki.wScan = (ushort)ch;
             inputs[0].u.ki.dwFlags = KEYEVENTF_UNICODE;
             inputs[0].u.ki.time = 0;
-            inputs[0].u.ki.dwExtraInfo = UIntPtr.Zero;
+            inputs[0].u.ki.dwExtraInfo = IntPtr.Zero;
 
             inputs[1].type = 1;
             inputs[1].u.ki.wVk = 0;
             inputs[1].u.ki.wScan = (ushort)ch;
             inputs[1].u.ki.dwFlags = KEYEVENTF_UNICODE | KEYEVENTF_KEYUP;
             inputs[1].u.ki.time = 0;
-            inputs[1].u.ki.dwExtraInfo = UIntPtr.Zero;
+            inputs[1].u.ki.dwExtraInfo = IntPtr.Zero;
 
-            SendInput(2, inputs, Marshal.SizeOf(typeof(INPUT)));
+            uint res = SendInput(2, inputs, Marshal.SizeOf(typeof(INPUT)));
+            if (res == 0) {
+                short vk = VkKeyScan(ch);
+                if (vk != -1) {
+                    byte bVk = (byte)(vk & 0xFF);
+                    byte shift = (byte)((vk >> 8) & 0xFF);
+                    if ((shift & 1) != 0) keybd_event(VK_SHIFT, (byte)MapVirtualKey(VK_SHIFT, 0), 0, UIntPtr.Zero);
+                    TapKey(bVk);
+                    if ((shift & 1) != 0) keybd_event(VK_SHIFT, (byte)MapVirtualKey(VK_SHIFT, 0), KEYEVENTF_KEYUP, UIntPtr.Zero);
+                }
+            }
         }
 
         static void TapKey(byte vk, bool extended = false) {
+            uint scan = MapVirtualKey(vk, 0);
             uint flags = extended ? KEYEVENTF_EXTENDEDKEY : 0;
-            keybd_event(vk, 0, flags, UIntPtr.Zero);
-            keybd_event(vk, 0, flags | KEYEVENTF_KEYUP, UIntPtr.Zero);
+            keybd_event(vk, (byte)scan, flags, UIntPtr.Zero);
+            keybd_event(vk, (byte)scan, flags | KEYEVENTF_KEYUP, UIntPtr.Zero);
         }
 
         static void Main(string[] args) {
@@ -180,13 +223,16 @@ namespace RemoteMouse {
 
             string line;
             while ((line = Console.ReadLine()) != null) {
-                line = line.Trim();
                 if (line.Length == 0) continue;
+                if (!line.StartsWith("type ", StringComparison.OrdinalIgnoreCase)) {
+                    line = line.Trim();
+                    if (line.Length == 0) continue;
+                }
 
                 try {
                     int spaceIdx = line.IndexOf(' ');
                     string cmd = spaceIdx > 0 ? line.Substring(0, spaceIdx).ToLower() : line.ToLower();
-                    string rest = spaceIdx > 0 ? line.Substring(spaceIdx + 1).Trim() : "";
+                    string rest = spaceIdx > 0 ? (cmd == "type" ? line.Substring(spaceIdx + 1) : line.Substring(spaceIdx + 1).Trim()) : "";
 
                     switch (cmd) {
                         case "move": {
@@ -231,14 +277,24 @@ namespace RemoteMouse {
                         case "key": {
                             string keyName = rest;
                             if (keyName.Equals("Enter", StringComparison.OrdinalIgnoreCase) || keyName.Equals("Return", StringComparison.OrdinalIgnoreCase)) TapKey(VK_RETURN);
-                            else if (keyName.Equals("Backspace", StringComparison.OrdinalIgnoreCase)) TapKey(VK_BACK);
+                            else if (keyName.Equals("Backspace", StringComparison.OrdinalIgnoreCase) || keyName.Equals("Back", StringComparison.OrdinalIgnoreCase)) TapKey(VK_BACK);
                             else if (keyName.Equals("Tab", StringComparison.OrdinalIgnoreCase)) TapKey(VK_TAB);
                             else if (keyName.Equals("Escape", StringComparison.OrdinalIgnoreCase) || keyName.Equals("Esc", StringComparison.OrdinalIgnoreCase)) TapKey(VK_ESCAPE);
-                            else if (keyName.Equals("Space", StringComparison.OrdinalIgnoreCase)) TapKey(VK_SPACE);
+                            else if (keyName.Equals("Space", StringComparison.OrdinalIgnoreCase) || keyName.Equals(" ", StringComparison.OrdinalIgnoreCase)) TapKey(VK_SPACE);
                             else if (keyName.Equals("ArrowUp", StringComparison.OrdinalIgnoreCase) || keyName.Equals("Up", StringComparison.OrdinalIgnoreCase)) TapKey(VK_UP, true);
                             else if (keyName.Equals("ArrowDown", StringComparison.OrdinalIgnoreCase) || keyName.Equals("Down", StringComparison.OrdinalIgnoreCase)) TapKey(VK_DOWN, true);
                             else if (keyName.Equals("ArrowLeft", StringComparison.OrdinalIgnoreCase) || keyName.Equals("Left", StringComparison.OrdinalIgnoreCase)) TapKey(VK_LEFT, true);
                             else if (keyName.Equals("ArrowRight", StringComparison.OrdinalIgnoreCase) || keyName.Equals("Right", StringComparison.OrdinalIgnoreCase)) TapKey(VK_RIGHT, true);
+                            else if (keyName.Equals("PageUp", StringComparison.OrdinalIgnoreCase) || keyName.Equals("PgUp", StringComparison.OrdinalIgnoreCase)) TapKey(VK_PRIOR, true);
+                            else if (keyName.Equals("PageDown", StringComparison.OrdinalIgnoreCase) || keyName.Equals("PgDn", StringComparison.OrdinalIgnoreCase)) TapKey(VK_NEXT, true);
+                            else if (keyName.Equals("Home", StringComparison.OrdinalIgnoreCase)) TapKey(VK_HOME, true);
+                            else if (keyName.Equals("End", StringComparison.OrdinalIgnoreCase)) TapKey(VK_END, true);
+                            else if (keyName.Equals("WinH", StringComparison.OrdinalIgnoreCase) || keyName.Equals("Dictate", StringComparison.OrdinalIgnoreCase)) {
+                                // Windows Voice Typing hotkey: Win + H
+                                keybd_event(0x5B, 0, 0, UIntPtr.Zero);
+                                TapKey(0x48); // 'H' key
+                                keybd_event(0x5B, 0, KEYEVENTF_KEYUP, UIntPtr.Zero);
+                            }
                             break;
                         }
                         case "type": {

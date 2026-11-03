@@ -109,9 +109,13 @@ wss.on('connection', (ws, req) => {
         case 'keyboard_type': {
           if (typeof data.text === 'string' && data.text.length > 0) {
             const clean = data.text.replace(/\r/g, '');
-            for (const line of clean.split('\n')) {
-              if (line.length > 0) {
-                sendNativeCommand(`type ${line}`);
+            const lines = clean.split('\n');
+            for (let i = 0; i < lines.length; i++) {
+              if (lines[i].length > 0) {
+                sendNativeCommand(`type ${lines[i]}`);
+              }
+              if (i < lines.length - 1) {
+                sendNativeCommand('key Enter');
               }
             }
           }
