@@ -61,9 +61,9 @@
     setupVolumeButton(btnVolMute, 'mute');
     setupVolumeButton(btnVolUp, 'up');
 
-    // 3. Right-side Shorts Video Rail (Prev Short: Up Arrow, Next Short: Down Arrow)
-    const btnPrevShort = document.getElementById('btn-prev-short');
-    const btnNextShort = document.getElementById('btn-next-short');
+    // 3. Shorts Video Mode Navigation (Prev Video: Up Arrow, Next Video: Down Arrow)
+    const btnShortsPrev = document.getElementById('btn-shorts-prev') || document.getElementById('btn-prev-short');
+    const btnShortsNext = document.getElementById('btn-shorts-next') || document.getElementById('btn-next-short');
 
     function setupShortsButton(btn, keyName) {
       if (!btn) return;
@@ -84,8 +84,8 @@
       btn.addEventListener('mousedown', triggerKey);
     }
 
-    setupShortsButton(btnPrevShort, 'ArrowUp');
-    setupShortsButton(btnNextShort, 'ArrowDown');
+    setupShortsButton(btnShortsPrev, 'ArrowUp');
+    setupShortsButton(btnShortsNext, 'ArrowDown');
   }
 
   window.ControlsModule = { init: initControls };

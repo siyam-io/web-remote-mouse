@@ -27,7 +27,7 @@
         </div>
       </div>
 
-      <!-- Mode Toggle: Trackpad Mode | Air Mouse Mode -->
+      <!-- Mode Toggle: Trackpad Mode | Air Mouse Mode | Shorts Mode -->
       <div class="mode-segmented-control" role="tablist" aria-label="Control Mode">
         <button id="mode-trackpad-btn" class="mode-seg-btn active" type="button" role="tab" aria-selected="true" title="Trackpad Mode">
           <span class="mode-icon">👆</span>
@@ -36,6 +36,10 @@
         <button id="mode-air-btn" class="mode-seg-btn" type="button" role="tab" aria-selected="false" title="Air Mouse (Gyro) Mode">
           <span class="mode-icon">🎯</span>
           <span class="mode-text">Air Mouse</span>
+        </button>
+        <button id="mode-shorts-btn" class="mode-seg-btn" type="button" role="tab" aria-selected="false" title="Short Video Mode">
+          <span class="mode-icon">🎬</span>
+          <span class="mode-text">Shorts</span>
         </button>
       </div>
 
@@ -169,25 +173,27 @@
           </div>
         </div>
 
+        <!-- Shorts Video Mode View (Active in Shorts Mode) -->
+        <div id="shorts-mode-view" class="shorts-mode-view">
+          <button id="btn-shorts-prev" class="shorts-btn prev" type="button" aria-label="Previous Video" title="Previous Video (↑)">
+            <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+              <polyline points="18 15 12 9 6 15"></polyline>
+            </svg>
+            <span class="shorts-btn-label">PREVIOUS</span>
+          </button>
+          <button id="btn-shorts-next" class="shorts-btn next" type="button" aria-label="Next Video" title="Next Video (↓)">
+            <span class="shorts-btn-label">NEXT</span>
+            <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+              <polyline points="6 9 12 15 18 9"></polyline>
+            </svg>
+          </button>
+        </div>
+
         <div id="scroll-overlay" class="scroll-overlay">
           <span id="scroll-overlay-icon">↕️</span>
           <span id="scroll-overlay-text">Scrolling</span>
         </div>
       </main>
-
-      <!-- Right-Side Shorts Video Navigation Rail (Just 2 Clean Icons) -->
-      <div id="shorts-rail" class="shorts-rail" aria-label="Short Video Controls">
-        <button id="btn-prev-short" class="rail-btn rail-prev" aria-label="Previous Short Video" title="Previous Short (↑)">
-          <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
-            <polyline points="18 15 12 9 6 15"></polyline>
-          </svg>
-        </button>
-        <button id="btn-next-short" class="rail-btn rail-next" aria-label="Next Short Video" title="Next Short (↓)">
-          <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
-            <polyline points="6 9 12 15 18 9"></polyline>
-          </svg>
-        </button>
-      </div>
     </div>
 
     <!-- Compact Volume Bar -->

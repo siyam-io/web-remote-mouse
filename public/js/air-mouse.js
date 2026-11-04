@@ -300,12 +300,30 @@
       }, { passive: false });
     }
 
-    // Mode Toggle Buttons (Trackpad vs Air Mouse)
+    // Mode Toggle Buttons (Trackpad vs Air Mouse vs Shorts)
     const modeTrackpadBtn = document.getElementById('mode-trackpad-btn');
     const modeAirBtn = document.getElementById('mode-air-btn');
+    const modeShortsBtn = document.getElementById('mode-shorts-btn');
 
     async function setMode(mode) {
       if (mode === window.AppState.currentMode) return;
+
+      // Reset active tabs & trackpad classes
+      if (modeTrackpadBtn) {
+        modeTrackpadBtn.classList.remove('active');
+        modeTrackpadBtn.setAttribute('aria-selected', 'false');
+      }
+      if (modeAirBtn) {
+        modeAirBtn.classList.remove('active');
+        modeAirBtn.setAttribute('aria-selected', 'false');
+      }
+      if (modeShortsBtn) {
+        modeShortsBtn.classList.remove('active');
+        modeShortsBtn.setAttribute('aria-selected', 'false');
+      }
+      trackpad.classList.remove('air-mode', 'shorts-mode');
+      stopAiming();
+      stopOrientationTracking();
 
       if (mode === 'air') {
         if (!isSecureOrigin && httpsNotice) httpsNotice.style.display = 'flex';
@@ -313,14 +331,15 @@
         const granted = await requestDeviceOrientationPermission();
         if (!granted) {
           alert('Motion sensor permission is required for Air Mouse mode. If on iPhone or Chrome, please connect using HTTPS.');
+          setMode('trackpad');
           return;
         }
 
         window.AppState.currentMode = 'air';
-        modeTrackpadBtn.classList.remove('active');
-        modeTrackpadBtn.setAttribute('aria-selected', 'false');
-        modeAirBtn.classList.add('active');
-        modeAirBtn.setAttribute('aria-selected', 'true');
+        if (modeAirBtn) {
+          modeAirBtn.classList.add('active');
+          modeAirBtn.setAttribute('aria-selected', 'true');
+        }
         trackpad.classList.add('air-mode');
         startOrientationTracking();
         window.AppState.requestWakeLock();
@@ -329,21 +348,28 @@
         if (telemetryStatusText) {
           telemetryStatusText.textContent = isSecureOrigin ? 'Sensor: Checking...' : '⚠️ HTTP: Use HTTPS Port 3443';
         }
+      } else if (mode === 'shorts') {
+        window.AppState.currentMode = 'shorts';
+        if (modeShortsBtn) {
+          modeShortsBtn.classList.add('active');
+          modeShortsBtn.setAttribute('aria-selected', 'true');
+        }
+        trackpad.classList.add('shorts-mode');
+        window.AppState.requestWakeLock();
+        window.AppState.haptic(25);
       } else {
         window.AppState.currentMode = 'trackpad';
-        modeAirBtn.classList.remove('active');
-        modeAirBtn.setAttribute('aria-selected', 'false');
-        modeTrackpadBtn.classList.add('active');
-        modeTrackpadBtn.setAttribute('aria-selected', 'true');
-        trackpad.classList.remove('air-mode');
-        stopAiming();
-        stopOrientationTracking();
+        if (modeTrackpadBtn) {
+          modeTrackpadBtn.classList.add('active');
+          modeTrackpadBtn.setAttribute('aria-selected', 'true');
+        }
         window.AppState.haptic(20);
       }
     }
 
     if (modeTrackpadBtn) modeTrackpadBtn.addEventListener('click', (e) => { e.preventDefault(); setMode('trackpad'); });
     if (modeAirBtn) modeAirBtn.addEventListener('click', (e) => { e.preventDefault(); setMode('air'); });
+    if (modeShortsBtn) modeShortsBtn.addEventListener('click', (e) => { e.preventDefault(); setMode('shorts'); });
   }
 
   window.AirMouseModule = { init: initAirMouse };

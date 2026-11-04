@@ -1,8 +1,7 @@
-/* Trackpad Container (Holds Trackpad + Right-side Shorts Rail) */
+/* Trackpad Container */
 .trackpad-container {
   flex: 1;
   display: flex;
-  gap: 8px;
   margin: 10px 10px 4px 10px;
   position: relative;
   overflow: hidden;
@@ -59,7 +58,8 @@
   opacity: 0.06;
 }
 
-#trackpad.air-mode .trackpad-guide {
+#trackpad.air-mode .trackpad-guide,
+#trackpad.shorts-mode .trackpad-guide {
   display: none !important;
 }
 
@@ -75,61 +75,64 @@
   font-size: 16px;
 }
 
-/* Right-side Shorts Video Navigation Rail (2 Icons) */
-.shorts-rail {
-  display: flex;
+/* Dedicated Shorts Video Mode View (Previous & Next Buttons) */
+.shorts-mode-view {
+  display: none;
+  position: absolute;
+  inset: 12px;
   flex-direction: column;
-  justify-content: center;
-  gap: 12px;
-  width: 52px;
-  z-index: 6;
+  gap: 14px;
+  z-index: 10;
 }
 
-.rail-btn {
+#trackpad.shorts-mode .shorts-mode-view {
+  display: flex;
+}
+
+.shorts-btn {
   flex: 1;
-  max-height: 130px;
-  min-height: 70px;
   background: rgba(19, 25, 38, 0.7);
-  backdrop-filter: blur(8px);
-  -webkit-backdrop-filter: blur(8px);
-  border: 1px solid var(--border-color);
-  border-radius: 14px;
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+  border: 1.5px solid var(--border-color);
+  border-radius: 18px;
   color: var(--text-primary);
   display: flex;
+  flex-direction: column;
   align-items: center;
   justify-content: center;
+  gap: 10px;
   cursor: pointer;
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.35);
   transition: all 0.15s cubic-bezier(0.16, 1, 0.3, 1);
-  touch-action: none;
+  touch-action: manipulation;
   user-select: none;
   -webkit-user-select: none;
 }
 
-.rail-btn.rail-prev {
+.shorts-btn.prev {
   border-color: rgba(56, 189, 248, 0.35);
-  background: linear-gradient(180deg, rgba(56, 189, 248, 0.12) 0%, rgba(30, 41, 59, 0.6) 100%);
+  background: linear-gradient(180deg, rgba(56, 189, 248, 0.14) 0%, rgba(30, 41, 59, 0.6) 100%);
 }
 
-.rail-btn.rail-next {
+.shorts-btn.next {
   border-color: rgba(244, 63, 94, 0.45);
   background: linear-gradient(180deg, rgba(30, 41, 59, 0.6) 0%, rgba(225, 29, 72, 0.22) 100%);
 }
 
-.rail-btn:active, .rail-btn.btn-pressed {
-  transform: scale(0.92);
+.shorts-btn:active, .shorts-btn.btn-pressed {
+  transform: scale(0.97);
   border-color: var(--accent-blue);
-  box-shadow: 0 0 16px var(--accent-glow);
+  box-shadow: 0 0 20px var(--accent-glow);
   color: #ffffff;
   background: #1e293b;
 }
 
-.rail-btn svg {
-  transition: transform 0.15s ease;
-}
-
-.rail-btn:active svg {
-  transform: scale(1.2);
+.shorts-btn-label {
+  font-size: 14px;
+  font-weight: 700;
+  letter-spacing: 2px;
+  color: var(--text-primary);
 }
 
 /* Visual touch point */

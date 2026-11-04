@@ -48,7 +48,7 @@
     let twoFingerScrollAccumulator = 0;
 
     trackpad.addEventListener('touchstart', (e) => {
-      if (window.AppState.currentMode === 'air') return;
+      if (window.AppState.currentMode !== 'trackpad') return;
       e.preventDefault();
       window.AppState.requestWakeLock();
       trackpad.classList.add('active');
@@ -78,7 +78,7 @@
     }, { passive: false });
 
     trackpad.addEventListener('touchmove', (e) => {
-      if (window.AppState.currentMode === 'air') return;
+      if (window.AppState.currentMode !== 'trackpad') return;
       e.preventDefault();
       const currentTouchCount = e.touches.length;
       const rect = trackpad.getBoundingClientRect();
@@ -140,7 +140,7 @@
     }, { passive: false });
 
     trackpad.addEventListener('touchend', (e) => {
-      if (window.AppState.currentMode === 'air') return;
+      if (window.AppState.currentMode !== 'trackpad') return;
       e.preventDefault();
       const rect = trackpad.getBoundingClientRect();
 
@@ -166,7 +166,7 @@
     }, { passive: false });
 
     trackpad.addEventListener('touchcancel', () => {
-      if (window.AppState.currentMode === 'air') return;
+      if (window.AppState.currentMode !== 'trackpad') return;
       trackpad.classList.remove('active');
       touchIndicator.style.display = 'none';
       touchCount = 0;
