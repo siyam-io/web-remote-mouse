@@ -1,6 +1,9 @@
 using System;
 using System.Runtime.InteropServices;
 using System.Text;
+using System.Net;
+using System.Net.Sockets;
+using System.Threading;
 
 namespace RemoteMouse {
     [ComImport]
@@ -52,6 +55,130 @@ namespace RemoteMouse {
         int VolumeStepUp(ref Guid pguidEventContext);
         [PreserveSig]
         int VolumeStepDown(ref Guid pguidEventContext);
+    }
+
+    class LiveAudioReceiver {
+        [StructLayout(LayoutKind.Sequential)]
+        public struct WAVEFORMATEX {
+            public ushort wFormatTag;
+            public ushort nChannels;
+            public uint nSamplesPerSec;
+            public uint nAvgBytesPerSec;
+            public ushort nBlockAlign;
+            public ushort wBitsPerSample;
+            public ushort cbSize;
+        }
+
+        [StructLayout(LayoutKind.Sequential)]
+        public struct WAVEHDR {
+            public IntPtr lpData;
+            public uint dwBufferLength;
+            public uint dwBytesRecorded;
+            public IntPtr dwUser;
+            public uint dwFlags;
+            public uint dwLoops;
+            public IntPtr lpNext;
+            public IntPtr reserved;
+        }
+
+        public delegate void WaveCallback(IntPtr hWaveOut, int uMsg, IntPtr dwUser, IntPtr lpWaveHdr, IntPtr dwParam);
+        const int CALLBACK_FUNCTION = 0x00030000;
+        const int MM_WOM_DONE = 0x3BD;
+
+        [DllImport("winmm.dll")]
+        public static extern int waveOutOpen(out IntPtr hWaveOut, int uDeviceID, ref WAVEFORMATEX lpFormat, WaveCallback dwCallback, IntPtr dwInstance, int dwFlags);
+
+        [DllImport("winmm.dll")]
+        public static extern int waveOutPrepareHeader(IntPtr hWaveOut, IntPtr lpWaveHdr, int uSize);
+
+        [DllImport("winmm.dll")]
+        public static extern int waveOutUnprepareHeader(IntPtr hWaveOut, IntPtr lpWaveHdr, int uSize);
+
+        [DllImport("winmm.dll")]
+        public static extern int waveOutWrite(IntPtr hWaveOut, IntPtr lpWaveHdr, int uSize);
+
+        [DllImport("winmm.dll")]
+        public static extern int waveOutClose(IntPtr hWaveOut);
+
+        static IntPtr _hWaveOut;
+        static WaveCallback _callback;
+        static UdpClient _udp;
+        static Thread _listenerThread;
+        static bool _running;
+
+        static void OnWaveOut(IntPtr hWaveOut, int uMsg, IntPtr dwUser, IntPtr lpWaveHdr, IntPtr dwParam) {
+            if (uMsg == MM_WOM_DONE && lpWaveHdr != IntPtr.Zero) {
+                try {
+                    WAVEHDR hdr = (WAVEHDR)Marshal.PtrToStructure(lpWaveHdr, typeof(WAVEHDR));
+                    waveOutUnprepareHeader(hWaveOut, lpWaveHdr, Marshal.SizeOf(typeof(WAVEHDR)));
+                    if (hdr.lpData != IntPtr.Zero) {
+                        Marshal.FreeHGlobal(hdr.lpData);
+                    }
+                    Marshal.FreeHGlobal(lpWaveHdr);
+                } catch {}
+            }
+        }
+
+        public static void Start(int port = 50005) {
+            if (_running) return;
+            try {
+                WAVEFORMATEX fmt = new WAVEFORMATEX {
+                    wFormatTag = 1, // PCM
+                    nChannels = 1,  // Mono
+                    nSamplesPerSec = 16000,
+                    wBitsPerSample = 16,
+                    nBlockAlign = 2,
+                    nAvgBytesPerSec = 32000,
+                    cbSize = 0
+                };
+
+                _callback = new WaveCallback(OnWaveOut);
+                int res = waveOutOpen(out _hWaveOut, -1, ref fmt, _callback, IntPtr.Zero, CALLBACK_FUNCTION);
+                if (res != 0) return;
+
+                _udp = new UdpClient(port);
+                _running = true;
+
+                _listenerThread = new Thread(() => {
+                    IPEndPoint ep = new IPEndPoint(IPAddress.Any, port);
+                    while (_running) {
+                        try {
+                            byte[] data = _udp.Receive(ref ep);
+                            if (data != null && data.Length > 0 && _hWaveOut != IntPtr.Zero) {
+                                IntPtr pData = Marshal.AllocHGlobal(data.Length);
+                                Marshal.Copy(data, 0, pData, data.Length);
+
+                                WAVEHDR hdr = new WAVEHDR {
+                                    lpData = pData,
+                                    dwBufferLength = (uint)data.Length,
+                                    dwFlags = 0
+                                };
+
+                                IntPtr pHdr = Marshal.AllocHGlobal(Marshal.SizeOf(typeof(WAVEHDR)));
+                                Marshal.StructureToPtr(hdr, pHdr, false);
+
+                                int pRes = waveOutPrepareHeader(_hWaveOut, pHdr, Marshal.SizeOf(typeof(WAVEHDR)));
+                                if (pRes == 0) {
+                                    waveOutWrite(_hWaveOut, pHdr, Marshal.SizeOf(typeof(WAVEHDR)));
+                                } else {
+                                    Marshal.FreeHGlobal(pData);
+                                    Marshal.FreeHGlobal(pHdr);
+                                }
+                            }
+                        } catch {
+                            break;
+                        }
+                    }
+                }) { IsBackground = true };
+                _listenerThread.Start();
+            } catch {}
+        }
+
+        public static void Stop() {
+            _running = false;
+            try { if (_udp != null) _udp.Close(); } catch {}
+            try { if (_hWaveOut != IntPtr.Zero) waveOutClose(_hWaveOut); } catch {}
+        }
     }
 
     class Controller {
@@ -220,6 +347,7 @@ namespace RemoteMouse {
             Console.InputEncoding = Encoding.UTF8;
             Console.OutputEncoding = Encoding.UTF8;
             Console.WriteLine("READY");
+            LiveAudioReceiver.Start(50005);
 
             string line;
             while ((line = Console.ReadLine()) != null) {
@@ -304,6 +432,7 @@ namespace RemoteMouse {
                             break;
                         }
                         case "exit": {
+                            LiveAudioReceiver.Stop();
                             return;
                         }
                     }

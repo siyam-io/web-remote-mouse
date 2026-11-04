@@ -70,9 +70,16 @@
     }
   }
 
+  function sendRaw(buffer) {
+    if (ws && ws.readyState === WebSocket.OPEN) {
+      ws.send(buffer);
+    }
+  }
+
   window.AppConnection = {
     connect,
     send,
+    sendRaw,
     updateStatus
   };
 })(window);

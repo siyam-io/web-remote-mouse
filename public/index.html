@@ -83,15 +83,22 @@
       </div>
     </header>
 
-    <!-- Floating Live Speech Recognition Overlay Banner -->
+    <!-- Floating Live Mic & WO Mic Overlay Banner -->
     <div id="speech-overlay" class="speech-overlay">
       <div class="speech-status-group">
         <div class="speech-recording-dot"></div>
-        <span id="speech-text" class="speech-text">Listening... Speak now</span>
+        <div class="speech-text-wrap">
+          <span id="speech-mode-badge" class="speech-mode-badge">WO MIC (LIVE PC MIC)</span>
+          <span id="speech-text" class="speech-text">Streaming phone mic to PC...</span>
+          <div id="mic-level-container" class="mic-level-container">
+            <div id="mic-level-bar" class="mic-level-bar"></div>
+          </div>
+        </div>
       </div>
       <div class="speech-actions">
-        <button id="speech-lang-btn" class="speech-lang-btn" type="button" title="Switch Voice Language">EN</button>
-        <button id="speech-close-btn" class="speech-close-btn" type="button" aria-label="Stop Voice Dictation">✕</button>
+        <button id="mic-mode-toggle" class="mic-mode-toggle" type="button" title="Switch between WO Mic and Voice Typing">Mode: Live</button>
+        <button id="speech-lang-btn" class="speech-lang-btn" type="button" title="Switch Voice Language" style="display:none;">EN</button>
+        <button id="speech-close-btn" class="speech-close-btn" type="button" aria-label="Stop Mic">✕</button>
       </div>
     </div>
 

@@ -8,6 +8,10 @@ const qrcode = require('qrcode-terminal');
 const { spawn } = require('child_process');
 const fs = require('fs');
 const selfsigned = require('selfsigned');
+const dgram = require('dgram');
+
+const udpAudioSocket = dgram.createSocket('udp4');
+const AUDIO_PORT = 50005;
 
 const CONTROLLER_EXE = path.join(__dirname, 'bin', 'controller.exe');
 const CERT_DIR = path.join(__dirname, '.cert');
@@ -78,7 +82,13 @@ wss.on('connection', (ws, req) => {
   const clientIp = req.socket.remoteAddress;
   console.log(`[WS] Client connected from ${clientIp}`);
 
-  ws.on('message', (message) => {
+  ws.on('message', (message, isBinary) => {
+    // If incoming packet is raw audio PCM (binary), forward directly to Windows audio receiver
+    if (isBinary || (Buffer.isBuffer(message) && message.length > 0 && message[0] !== 0x7b /* '{' */)) {
+      udpAudioSocket.send(message, AUDIO_PORT, '127.0.0.1');
+      return;
+    }
+
     try {
       const data = JSON.parse(message.toString());
 
