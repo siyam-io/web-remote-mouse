@@ -1,0 +1,684 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>DroidCam PC Monitor - Web Remote Camera</title>
+  <link rel="stylesheet" href="css/variables.css">
+  <style>
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+    }
+
+    body {
+      background: #090d16;
+      color: var(--text-primary, #f1f5f9);
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      padding: 16px;
+      overflow-x: hidden;
+    }
+
+    .monitor-container {
+      width: 100%;
+      max-width: 1100px;
+      display: flex;
+      flex-direction: column;
+      gap: 16px;
+    }
+
+    /* Top Bar Header */
+    header.monitor-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 12px 20px;
+      background: rgba(19, 25, 38, 0.7);
+      backdrop-filter: blur(12px);
+      border: 1px solid var(--border-color, #1e293b);
+      border-radius: 16px;
+      box-shadow: 0 4px 20px rgba(0, 0, 0, 0.4);
+    }
+
+    .header-left {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+
+    .brand-icon {
+      font-size: 24px;
+    }
+
+    .brand-title {
+      font-size: 18px;
+      font-weight: 700;
+      letter-spacing: 0.5px;
+      color: #ffffff;
+    }
+
+    .brand-subtitle {
+      font-size: 11px;
+      color: var(--text-muted, #94a3b8);
+    }
+
+    .header-status {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      font-size: 12px;
+      font-weight: 600;
+      padding: 6px 14px;
+      border-radius: 9999px;
+      background: rgba(239, 68, 68, 0.15);
+      border: 1px solid rgba(239, 68, 68, 0.35);
+      color: #f87171;
+    }
+
+    .header-status.connected {
+      background: rgba(16, 185, 129, 0.15);
+      border-color: rgba(16, 185, 129, 0.4);
+      color: #34d399;
+    }
+
+    .status-dot {
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+      background: currentColor;
+      box-shadow: 0 0 8px currentColor;
+    }
+
+    /* Main Video Viewport */
+    .video-viewport {
+      position: relative;
+      width: 100%;
+      aspect-ratio: 16 / 9;
+      background: #000000;
+      border-radius: 20px;
+      overflow: hidden;
+      border: 1px solid var(--border-color, #1e293b);
+      box-shadow: 0 12px 36px rgba(0, 0, 0, 0.6), inset 0 0 20px rgba(0, 0, 0, 0.8);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    #stream-canvas {
+      width: 100%;
+      height: 100%;
+      object-fit: contain;
+      display: block;
+      transition: transform 0.2s ease;
+    }
+
+    #stream-canvas.mirrored {
+      transform: scaleX(-1);
+    }
+
+    /* Hidden video element used for Picture-in-Picture stream capture */
+    #hidden-pip-video {
+      position: absolute;
+      width: 1px;
+      height: 1px;
+      opacity: 0;
+      pointer-events: none;
+    }
+
+    /* Placeholder when no camera is streaming */
+    .viewport-placeholder {
+      position: absolute;
+      inset: 0;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: 12px;
+      background: radial-gradient(circle at center, #131926 0%, #06090e 100%);
+      color: var(--text-muted, #94a3b8);
+      text-align: center;
+      padding: 20px;
+      z-index: 2;
+    }
+
+    .viewport-placeholder.hidden {
+      display: none;
+    }
+
+    .placeholder-icon {
+      font-size: 48px;
+      opacity: 0.8;
+      animation: bounce 2s infinite ease-in-out;
+    }
+
+    @keyframes bounce {
+      0%, 100% { transform: translateY(0); }
+      50% { transform: translateY(-8px); }
+    }
+
+    .placeholder-title {
+      font-size: 18px;
+      font-weight: 700;
+      color: #ffffff;
+    }
+
+    .placeholder-desc {
+      font-size: 13px;
+      max-width: 420px;
+      line-height: 1.5;
+    }
+
+    /* HUD Overlay badges */
+    .hud-overlay {
+      position: absolute;
+      top: 14px;
+      left: 14px;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      z-index: 5;
+    }
+
+    .hud-badge {
+      background: rgba(0, 0, 0, 0.65);
+      backdrop-filter: blur(8px);
+      border: 1px solid rgba(255, 255, 255, 0.15);
+      padding: 4px 10px;
+      border-radius: 6px;
+      font-size: 11px;
+      font-weight: 700;
+      letter-spacing: 0.5px;
+    }
+
+    .hud-live {
+      color: #ef4444;
+      display: flex;
+      align-items: center;
+      gap: 5px;
+    }
+
+    .hud-live-dot {
+      width: 6px;
+      height: 6px;
+      border-radius: 50%;
+      background: #ef4444;
+      box-shadow: 0 0 6px #ef4444;
+    }
+
+    /* Floating Toolbar */
+    .controls-toolbar {
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+      padding: 12px 18px;
+      background: rgba(19, 25, 38, 0.7);
+      backdrop-filter: blur(12px);
+      border: 1px solid var(--border-color, #1e293b);
+      border-radius: 16px;
+    }
+
+    .toolbar-group {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      flex-wrap: wrap;
+    }
+
+    .tool-btn {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      padding: 8px 14px;
+      border-radius: 10px;
+      background: #1e293b;
+      border: 1px solid rgba(255, 255, 255, 0.1);
+      color: #f1f5f9;
+      font-size: 13px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.15s ease;
+      user-select: none;
+    }
+
+    .tool-btn:hover {
+      background: #334155;
+      border-color: rgba(255, 255, 255, 0.2);
+    }
+
+    .tool-btn:active {
+      transform: scale(0.96);
+    }
+
+    .tool-btn.active {
+      background: rgba(56, 189, 248, 0.2);
+      border-color: #38bdf8;
+      color: #38bdf8;
+    }
+
+    .tool-btn-primary {
+      background: linear-gradient(135deg, #2563eb, #1d4ed8);
+      border-color: #3b82f6;
+    }
+
+    .tool-btn-primary:hover {
+      background: linear-gradient(135deg, #1d4ed8, #1e40af);
+    }
+
+    /* OBS Studio Virtual Webcam Card */
+    .obs-card {
+      background: rgba(15, 23, 42, 0.7);
+      border: 1px solid rgba(56, 189, 248, 0.2);
+      border-radius: 16px;
+      padding: 16px 20px;
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+    }
+
+    .obs-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+    }
+
+    .obs-title {
+      font-size: 14px;
+      font-weight: 700;
+      color: #38bdf8;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .obs-copy-group {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      background: #090d16;
+      border: 1px solid #1e293b;
+      border-radius: 8px;
+      padding: 6px 12px;
+      max-width: 100%;
+      overflow: hidden;
+    }
+
+    .obs-url {
+      font-family: monospace;
+      font-size: 13px;
+      color: #a5f3fc;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+
+    .btn-copy {
+      padding: 4px 10px;
+      font-size: 12px;
+      font-weight: 700;
+      border-radius: 6px;
+      background: #0284c7;
+      border: none;
+      color: white;
+      cursor: pointer;
+      white-space: nowrap;
+    }
+
+    .btn-copy:hover {
+      background: #0369a1;
+    }
+
+    .obs-steps {
+      font-size: 12px;
+      color: var(--text-muted, #94a3b8);
+      line-height: 1.6;
+    }
+
+    .obs-steps ol {
+      margin-left: 18px;
+      margin-top: 4px;
+    }
+  </style>
+</head>
+<body>
+  <div class="monitor-container">
+    <!-- Header -->
+    <header class="monitor-header">
+      <div class="header-left">
+        <span class="brand-icon">📹</span>
+        <div>
+          <div class="brand-title">DROIDCAM PC MONITOR</div>
+          <div class="brand-subtitle">Wireless Phone-to-PC HD Video Stream</div>
+        </div>
+      </div>
+      <div id="status-chip" class="header-status">
+        <span class="status-dot"></span>
+        <span id="status-label">Waiting for phone...</span>
+      </div>
+    </header>
+
+    <!-- Main Viewport -->
+    <div class="video-viewport" id="viewport">
+      <canvas id="stream-canvas" width="1280" height="720"></canvas>
+      <video id="hidden-pip-video" playsinline autoplay muted></video>
+
+      <div class="hud-overlay" id="hud-overlay" style="display: none;">
+        <span class="hud-badge hud-live">
+          <span class="hud-live-dot"></span> LIVE
+        </span>
+        <span class="hud-badge" id="hud-fps">0 FPS</span>
+        <span class="hud-badge" id="hud-res">720p</span>
+      </div>
+
+      <div class="viewport-placeholder" id="placeholder">
+        <div class="placeholder-icon">📱 ➔ 💻</div>
+        <div class="placeholder-title">Ready to Stream</div>
+        <div class="placeholder-desc">
+          Open the Web Remote Mouse on your phone and tap the <b>📹 Camera</b> button in the top header. The live feed will display here instantly.
+        </div>
+      </div>
+    </div>
+
+    <!-- Controls Toolbar -->
+    <div class="controls-toolbar">
+      <div class="toolbar-group">
+        <button id="btn-pip" class="tool-btn tool-btn-primary" type="button" title="Pop out into floating Always-On-Top window on PC">
+          <span>🔲</span> Always-On-Top (PiP)
+        </button>
+        <button id="btn-fullscreen" class="tool-btn" type="button" title="Fullscreen Monitor">
+          <span>⛶</span> Fullscreen
+        </button>
+        <button id="btn-mirror" class="tool-btn" type="button" title="Mirror / Flip Video Horizontally">
+          <span>🔄</span> Mirror
+        </button>
+        <button id="btn-snapshot" class="tool-btn" type="button" title="Save snapshot to PC">
+          <span>📸</span> Take Photo
+        </button>
+        <button id="btn-record" class="tool-btn" type="button" title="Record live stream directly to video file">
+          <span id="record-icon">🔴</span> <span id="record-text">Record Video</span>
+        </button>
+      </div>
+
+      <div class="toolbar-group">
+        <span style="font-size: 11px; color: var(--text-muted); font-weight: 700;">REMOTE PHONE:</span>
+        <button id="btn-remote-torch" class="tool-btn" type="button" title="Toggle Phone Torch / Flashlight remotely">
+          <span>⚡</span> Torch
+        </button>
+        <button id="btn-remote-flip" class="tool-btn" type="button" title="Flip Phone Camera remotely">
+          <span>🔄</span> Flip
+        </button>
+        <button id="btn-remote-zoom" class="tool-btn" type="button" title="Toggle Phone Zoom remotely">
+          <span id="remote-zoom-label">🔍 1x</span>
+        </button>
+        <a href="/" class="tool-btn" title="Open Mouse Trackpad Control">
+          <span>👆</span> Remote Mouse
+        </a>
+      </div>
+    </div>
+
+    <!-- OBS Virtual Webcam Guide Card -->
+    <div class="obs-card">
+      <div class="obs-header">
+        <div class="obs-title">
+          <span>🎯</span> Use Phone as PC Webcam in Zoom / Discord / Google Meet
+        </div>
+      </div>
+      <div class="obs-copy-group">
+        <span class="obs-url" id="obs-feed-url">http://localhost:3000/video_feed</span>
+        <button id="btn-copy-url" class="btn-copy" type="button">Copy Feed URL</button>
+      </div>
+      <div class="obs-steps">
+        <ol>
+          <li>Open <b>OBS Studio</b> (free on Windows).</li>
+          <li>Under <b>Sources</b>, click <b>+</b> ➔ <b>Browser Source</b> (or Media Source) ➔ paste the URL above.</li>
+          <li>Click <b>Start Virtual Camera</b> in OBS Studio controls.</li>
+          <li>In <b>Zoom, Discord, or Google Meet</b>, select <i>OBS Virtual Camera</i> as your video input!</li>
+        </ol>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    (function () {
+      const canvas = document.getElementById('stream-canvas');
+      const ctx = canvas.getContext('2d');
+      const hiddenPipVideo = document.getElementById('hidden-pip-video');
+      const placeholder = document.getElementById('placeholder');
+      const hudOverlay = document.getElementById('hud-overlay');
+      const hudFps = document.getElementById('hud-fps');
+      const hudRes = document.getElementById('hud-res');
+      const statusChip = document.getElementById('status-chip');
+      const statusLabel = document.getElementById('status-label');
+      const btnPip = document.getElementById('btn-pip');
+      const btnFullscreen = document.getElementById('btn-fullscreen');
+      const btnMirror = document.getElementById('btn-mirror');
+      const btnSnapshot = document.getElementById('btn-snapshot');
+      const btnCopyUrl = document.getElementById('btn-copy-url');
+      const obsFeedUrl = document.getElementById('obs-feed-url');
+
+      const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
+      const wsUrl = `${protocol}//${window.location.host}`;
+      obsFeedUrl.textContent = `${window.location.protocol}//${window.location.host}/video_feed`;
+
+      let ws = null;
+      let isStreaming = false;
+      let frameCount = 0;
+      let lastFpsTime = Date.now();
+      let pipStream = null;
+
+      // Connect WebSocket and register as camera viewer
+      function connectWebSocket() {
+        ws = new WebSocket(wsUrl);
+        ws.binaryType = 'arraybuffer';
+
+        ws.onopen = () => {
+          ws.send(JSON.stringify({ type: 'register_camera_viewer' }));
+        };
+
+        ws.onmessage = async (event) => {
+          if (typeof event.data === 'string') {
+            try {
+              const msg = JSON.parse(event.data);
+              if (msg.type === 'camera_viewer_registered') {
+                console.log('[DroidCam Monitor] Registered with server.');
+              }
+            } catch (_) {}
+            return;
+          }
+
+          // Handle incoming JPEG frame buffer
+          const buffer = event.data;
+          const blob = new Blob([buffer], { type: 'image/jpeg' });
+
+          try {
+            const imgBitmap = await createImageBitmap(blob);
+            if (!isStreaming) {
+              isStreaming = true;
+              placeholder.classList.add('hidden');
+              hudOverlay.style.display = 'flex';
+              statusChip.classList.add('connected');
+              statusLabel.textContent = 'STREAMING LIVE';
+            }
+
+            if (canvas.width !== imgBitmap.width || canvas.height !== imgBitmap.height) {
+              canvas.width = imgBitmap.width;
+              canvas.height = imgBitmap.height;
+              hudRes.textContent = `${imgBitmap.width}x${imgBitmap.height}`;
+            }
+
+            ctx.drawImage(imgBitmap, 0, 0);
+            imgBitmap.close();
+
+            frameCount++;
+            const now = Date.now();
+            if (now - lastFpsTime >= 1000) {
+              const fps = Math.round((frameCount * 1000) / (now - lastFpsTime));
+              hudFps.textContent = `${fps} FPS`;
+              frameCount = 0;
+              lastFpsTime = now;
+            }
+          } catch (err) {
+            console.error('[Frame Render Error]', err);
+          }
+        };
+
+        ws.onclose = () => {
+          statusChip.classList.remove('connected');
+          statusLabel.textContent = 'Reconnecting...';
+          setTimeout(connectWebSocket, 1500);
+        };
+      }
+
+      connectWebSocket();
+
+      // Picture-in-Picture (PiP) Floating Window
+      btnPip.addEventListener('click', async () => {
+        try {
+          if (document.pictureInPictureElement) {
+            await document.exitPictureInPicture();
+            return;
+          }
+
+          if (!pipStream) {
+            pipStream = canvas.captureStream(30);
+            hiddenPipVideo.srcObject = pipStream;
+          }
+
+          await hiddenPipVideo.play();
+          await hiddenPipVideo.requestPictureInPicture();
+        } catch (err) {
+          alert('Picture-in-Picture failed: ' + (err.message || 'Stream not started yet. Start camera on phone first.'));
+        }
+      });
+
+      // Fullscreen
+      btnFullscreen.addEventListener('click', () => {
+        const viewport = document.getElementById('viewport');
+        if (!document.fullscreenElement) {
+          viewport.requestFullscreen().catch(() => {});
+        } else {
+          document.exitFullscreen().catch(() => {});
+        }
+      });
+
+      // Mirror Horizontal Flip
+      btnMirror.addEventListener('click', () => {
+        canvas.classList.toggle('mirrored');
+        btnMirror.classList.toggle('active');
+      });
+
+      // Take Photo Snapshot
+      btnSnapshot.addEventListener('click', () => {
+        if (!isStreaming) {
+          alert('Camera is not streaming yet.');
+          return;
+        }
+        const link = document.createElement('a');
+        link.download = `droidcam-snap-${Date.now()}.jpg`;
+        link.href = canvas.toDataURL('image/jpeg', 0.95);
+        link.click();
+      });
+
+      // Video Recording (MediaRecorder)
+      let mediaRecorder = null;
+      let recordedChunks = [];
+      const btnRecord = document.getElementById('btn-record');
+      const recordIcon = document.getElementById('record-icon');
+      const recordText = document.getElementById('record-text');
+
+      if (btnRecord) {
+        btnRecord.addEventListener('click', () => {
+          if (!isStreaming) {
+            alert('Start camera on phone before recording.');
+            return;
+          }
+
+          if (mediaRecorder && mediaRecorder.state === 'recording') {
+            mediaRecorder.stop();
+            btnRecord.classList.remove('active');
+            recordIcon.textContent = '🔴';
+            recordText.textContent = 'Record Video';
+          } else {
+            try {
+              const stream = canvas.captureStream(30);
+              recordedChunks = [];
+              const mimeType = MediaRecorder.isTypeSupported('video/webm;codecs=vp9') ? 'video/webm;codecs=vp9' : 'video/webm';
+              mediaRecorder = new MediaRecorder(stream, { mimeType });
+
+              mediaRecorder.ondataavailable = (e) => {
+                if (e.data && e.data.size > 0) recordedChunks.push(e.data);
+              };
+
+              mediaRecorder.onstop = () => {
+                const blob = new Blob(recordedChunks, { type: 'video/webm' });
+                const url = URL.createObjectURL(blob);
+                const a = document.createElement('a');
+                a.download = `droidcam-record-${Date.now()}.webm`;
+                a.href = url;
+                a.click();
+                setTimeout(() => URL.revokeObjectURL(url), 1000);
+              };
+
+              mediaRecorder.start(500);
+              btnRecord.classList.add('active');
+              recordIcon.textContent = '⏹️';
+              recordText.textContent = 'Stop Recording';
+            } catch (err) {
+              alert('Video recording failed: ' + err.message);
+            }
+          }
+        });
+      }
+
+      // Remote Phone Controls from PC
+      const btnRemoteTorch = document.getElementById('btn-remote-torch');
+      const btnRemoteFlip = document.getElementById('btn-remote-flip');
+      const btnRemoteZoom = document.getElementById('btn-remote-zoom');
+      const remoteZoomLabel = document.getElementById('remote-zoom-label');
+      let pcRemoteZoom = 1.0;
+
+      if (btnRemoteTorch) {
+        btnRemoteTorch.addEventListener('click', () => {
+          if (ws && ws.readyState === WebSocket.OPEN) {
+            ws.send(JSON.stringify({ type: 'cam_remote_cmd', action: 'torch' }));
+          }
+        });
+      }
+
+      if (btnRemoteFlip) {
+        btnRemoteFlip.addEventListener('click', () => {
+          if (ws && ws.readyState === WebSocket.OPEN) {
+            ws.send(JSON.stringify({ type: 'cam_remote_cmd', action: 'flip' }));
+          }
+        });
+      }
+
+      if (btnRemoteZoom) {
+        btnRemoteZoom.addEventListener('click', () => {
+          pcRemoteZoom = pcRemoteZoom === 1.0 ? 2.0 : (pcRemoteZoom === 2.0 ? 3.0 : 1.0);
+          if (remoteZoomLabel) remoteZoomLabel.textContent = `🔍 ${pcRemoteZoom}x`;
+          if (ws && ws.readyState === WebSocket.OPEN) {
+            ws.send(JSON.stringify({ type: 'cam_remote_cmd', action: 'zoom', value: pcRemoteZoom }));
+          }
+        });
+      }
+
+      // Copy OBS Feed URL
+      btnCopyUrl.addEventListener('click', () => {
+        navigator.clipboard.writeText(obsFeedUrl.textContent).then(() => {
+          btnCopyUrl.textContent = 'Copied! ✓';
+          setTimeout(() => { btnCopyUrl.textContent = 'Copy Feed URL'; }, 2000);
+        });
+      });
+    })();
+  </script>
+</body>
+</html>
+

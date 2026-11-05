@@ -69,10 +69,8 @@
       localStorage.setItem(STORAGE_KEYS.INVERT_SCROLL, DEFAULTS.INVERT_SCROLL.toString());
     },
 
-    haptic(duration = 20) {
-      if ('vibrate' in navigator) {
-        try { navigator.vibrate(duration); } catch (_) {}
-      }
+    haptic(_duration = 20) {
+      // All vibration effects permanently disabled per user request
     }
   };
 

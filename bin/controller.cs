@@ -4,6 +4,8 @@ using System.Text;
 using System.Net;
 using System.Net.Sockets;
 using System.Threading;
+using System.Windows.Automation;
+using System.Windows;
 
 namespace RemoteMouse {
     [ComImport]
@@ -181,6 +183,120 @@ namespace RemoteMouse {
         }
     }
 
+    class LiveAudioLoopback {
+        [Guid("1CB9AD4C-DBFA-4c32-B178-C2F568A703B2"), InterfaceType(ComInterfaceType.InterfaceIsIUnknown)]
+        internal interface IAudioClient {
+            [PreserveSig] int Initialize(int shareMode, int streamFlags, long hnsBufferDuration, long hnsPeriodicity, IntPtr pFormat, [In] ref Guid audioSessionGuid);
+            [PreserveSig] int GetBufferSize(out uint pNumBufferFrames);
+            [PreserveSig] int GetStreamLatency(out long phnsLatency);
+            [PreserveSig] int GetCurrentPadding(out uint pNumPaddingFrames);
+            [PreserveSig] int IsFormatSupported(int shareMode, IntPtr pFormat, out IntPtr ppClosestMatch);
+            [PreserveSig] int GetMixFormat(out IntPtr ppDeviceFormat);
+            [PreserveSig] int GetDevicePeriod(out long phnsDefaultDevicePeriod, out long phnsMinimumDevicePeriod);
+            [PreserveSig] int Start();
+            [PreserveSig] int Stop();
+            [PreserveSig] int Reset();
+            [PreserveSig] int SetEventHandle(IntPtr eventHandle);
+            [PreserveSig] int GetService(ref Guid riid, [MarshalAs(UnmanagedType.IUnknown)] out object ppv);
+        }
+
+        [Guid("C8ADBD64-E71E-48a0-A4DE-185C395CD317"), InterfaceType(ComInterfaceType.InterfaceIsIUnknown)]
+        internal interface IAudioCaptureClient {
+            [PreserveSig] int GetBuffer(out IntPtr ppData, out uint pNumFramesToRead, out int pdwFlags, out ulong pu64DevicePosition, out ulong pu64QPCPosition);
+            [PreserveSig] int ReleaseBuffer(uint numFramesRead);
+            [PreserveSig] int GetNextPacketSize(out uint pNumFramesInNextPacket);
+        }
+
+        static bool _running;
+        static Thread _thread;
+        static UdpClient _udp;
+        static IAudioClient _audioClient;
+        static IAudioCaptureClient _captureClient;
+
+        public static void Start(int targetPort = 50006) {
+            if (_running) return;
+            try {
+                IMMDeviceEnumerator enumerator = (IMMDeviceEnumerator)new MMDeviceEnumeratorComObject();
+                IMMDevice device;
+                if (enumerator.GetDefaultAudioEndpoint(0, 0, out device) != 0 || device == null) return;
+
+                Guid IID_IAudioClient = new Guid("1CB9AD4C-DBFA-4c32-B178-C2F568A703B2");
+                object clientObj;
+                if (device.Activate(ref IID_IAudioClient, 1, IntPtr.Zero, out clientObj) != 0 || clientObj == null) return;
+
+                _audioClient = (IAudioClient)clientObj;
+                IntPtr pFormat;
+                if (_audioClient.GetMixFormat(out pFormat) != 0 || pFormat == IntPtr.Zero) return;
+
+                LiveAudioReceiver.WAVEFORMATEX fmt = (LiveAudioReceiver.WAVEFORMATEX)Marshal.PtrToStructure(pFormat, typeof(LiveAudioReceiver.WAVEFORMATEX));
+                int nChannels = fmt.nChannels;
+
+                Guid emptySession = Guid.Empty;
+                if (_audioClient.Initialize(0, 0x00020000 /* LOOPBACK */, 10000000 /* 1s */, 0, pFormat, ref emptySession) != 0) return;
+
+                Guid IID_IAudioCaptureClient = new Guid("C8ADBD64-E71E-48a0-A4DE-185C395CD317");
+                object captureObj;
+                if (_audioClient.GetService(ref IID_IAudioCaptureClient, out captureObj) != 0 || captureObj == null) return;
+                _captureClient = (IAudioCaptureClient)captureObj;
+
+                _udp = new UdpClient();
+                IPEndPoint destEp = new IPEndPoint(IPAddress.Loopback, targetPort);
+
+                _audioClient.Start();
+                _running = true;
+
+                _thread = new Thread(() => {
+                    uint packetSize;
+                    IntPtr pData;
+                    uint numFrames;
+                    int flags;
+                    ulong devPos, qpcPos;
+                    float[] floatBuf = new float[4096 * nChannels];
+                    byte[] pcmBuf = new byte[4096 * 2];
+
+                    while (_running) {
+                        try {
+                            Thread.Sleep(20);
+                            while (_captureClient.GetNextPacketSize(out packetSize) == 0 && packetSize > 0) {
+                                if (_captureClient.GetBuffer(out pData, out numFrames, out flags, out devPos, out qpcPos) == 0) {
+                                    if (numFrames > 0 && pData != IntPtr.Zero) {
+                                        bool isSilent = (flags & 2) != 0;
+                                        int totalSamples = (int)(numFrames * nChannels);
+                                        if (floatBuf.Length < totalSamples) floatBuf = new float[totalSamples];
+                                        if (pcmBuf.Length < numFrames * 2) pcmBuf = new byte[numFrames * 2];
+
+                                        if (isSilent) {
+                                            Array.Clear(pcmBuf, 0, (int)(numFrames * 2));
+                                        } else {
+                                            Marshal.Copy(pData, floatBuf, 0, totalSamples);
+                                            for (int i = 0; i < numFrames; i++) {
+                                                float sample = nChannels > 1 ? (floatBuf[i * nChannels] + floatBuf[i * nChannels + 1]) * 0.5f : floatBuf[i];
+                                                short s = (short)Math.Max(-32768, Math.Min(32767, (int)(sample * 32767f)));
+                                                pcmBuf[i * 2] = (byte)(s & 0xFF);
+                                                pcmBuf[i * 2 + 1] = (byte)((s >> 8) & 0xFF);
+                                            }
+                                        }
+                                        _udp.Send(pcmBuf, (int)(numFrames * 2), destEp);
+                                    }
+                                    _captureClient.ReleaseBuffer(numFrames);
+                                }
+                            }
+                        } catch {
+                            break;
+                        }
+                    }
+                }) { IsBackground = true };
+                _thread.Start();
+            } catch {}
+        }
+
+        public static void Stop() {
+            _running = false;
+            try { if (_audioClient != null) _audioClient.Stop(); } catch {}
+            try { if (_udp != null) _udp.Close(); } catch {}
+        }
+    }
+
     class Controller {
         [DllImport("user32.dll")]
         static extern void mouse_event(uint dwFlags, int dx, int dy, uint dwData, UIntPtr dwExtraInfo);
@@ -267,6 +383,135 @@ namespace RemoteMouse {
             public ushort wParamH;
         }
 
+        [StructLayout(LayoutKind.Sequential)]
+        struct RECT {
+            public int Left;
+            public int Top;
+            public int Right;
+            public int Bottom;
+        }
+
+        [StructLayout(LayoutKind.Sequential)]
+        struct GUITHREADINFO {
+            public int cbSize;
+            public int flags;
+            public IntPtr hwndActive;
+            public IntPtr hwndFocus;
+            public IntPtr hwndCapture;
+            public IntPtr hwndMenuOwner;
+            public IntPtr hwndMoveSize;
+            public IntPtr hwndCaret;
+            public RECT rcCaret;
+        }
+
+        [DllImport("user32.dll")]
+        static extern bool GetGUIThreadInfo(uint idThread, ref GUITHREADINFO lpgui);
+
+        [StructLayout(LayoutKind.Sequential)]
+        struct POINT { public int x, y; }
+
+        [DllImport("user32.dll")]
+        static extern bool GetCursorPos(out POINT lpPoint);
+
+        [DllImport("user32.dll")]
+        static extern IntPtr GetForegroundWindow();
+
+        [DllImport("user32.dll")]
+        static extern uint GetWindowThreadProcessId(IntPtr hWnd, out uint lpdwProcessId);
+
+        [DllImport("user32.dll", CharSet = CharSet.Auto)]
+        static extern IntPtr SendMessage(IntPtr hWnd, uint Msg, int wParam, StringBuilder lParam);
+        const uint WM_GETTEXT = 0x000D;
+
+        [StructLayout(LayoutKind.Sequential)]
+        struct CURSORINFO {
+            public int cbSize;
+            public int flags;
+            public IntPtr hCursor;
+            public POINT ptScreenPos;
+        }
+
+        [DllImport("user32.dll")]
+        static extern bool GetCursorInfo(out CURSORINFO pci);
+
+        [DllImport("user32.dll")]
+        static extern IntPtr LoadCursor(IntPtr hInstance, int lpCursorName);
+
+        static void CheckFocusedTextFieldAsync() {
+            ThreadPool.QueueUserWorkItem(_ => {
+                try {
+                    Thread.Sleep(80);
+                    string text = null;
+                    bool isEditable = false;
+
+                    // 1. Check Foreground Window Caret Info
+                    IntPtr fore = GetForegroundWindow();
+                    if (fore != IntPtr.Zero) {
+                        uint pid;
+                        uint tid = GetWindowThreadProcessId(fore, out pid);
+                        GUITHREADINFO gui = new GUITHREADINFO();
+                        gui.cbSize = Marshal.SizeOf(typeof(GUITHREADINFO));
+                        if (GetGUIThreadInfo(tid, ref gui)) {
+                            if (gui.hwndCaret != IntPtr.Zero || (gui.rcCaret.Bottom > gui.rcCaret.Top)) {
+                                isEditable = true;
+                            }
+                            if (gui.hwndFocus != IntPtr.Zero) {
+                                StringBuilder sb = new StringBuilder(2048);
+                                SendMessage(gui.hwndFocus, WM_GETTEXT, 2048, sb);
+                                if (sb.Length > 0) text = sb.ToString();
+                            }
+                        }
+                    }
+
+                    // 2. Check Mouse Cursor I-Beam Shape
+                    CURSORINFO ci = new CURSORINFO();
+                    ci.cbSize = Marshal.SizeOf(typeof(CURSORINFO));
+                    if (GetCursorInfo(out ci)) {
+                        IntPtr ibeam = LoadCursor(IntPtr.Zero, 32513); // IDC_IBEAM
+                        if (ci.hCursor == ibeam && ibeam != IntPtr.Zero) {
+                            isEditable = true;
+                        }
+                    }
+
+                    // 3. Check UI Automation Candidates (Under Cursor & Focused)
+                    POINT pt;
+                    GetCursorPos(out pt);
+                    AutomationElement[] candidates = new AutomationElement[2];
+                    try { candidates[0] = AutomationElement.FromPoint(new Point(pt.x, pt.y)); } catch {}
+                    try { candidates[1] = AutomationElement.FocusedElement; } catch {}
+
+                    foreach (var el in candidates) {
+                        if (el == null) continue;
+                        try {
+                            ControlType ct = el.Current.ControlType;
+                            if (ct == ControlType.Edit || ct == ControlType.Document) isEditable = true;
+
+                            object pat;
+                            if (el.TryGetCurrentPattern(ValuePattern.Pattern, out pat)) {
+                                var vp = (ValuePattern)pat;
+                                if (!vp.Current.IsReadOnly) {
+                                    isEditable = true;
+                                    if (string.IsNullOrEmpty(text)) text = vp.Current.Value;
+                                }
+                            }
+                            if (isEditable && string.IsNullOrEmpty(text) && el.TryGetCurrentPattern(TextPattern.Pattern, out pat)) {
+                                var tp = (TextPattern)pat;
+                                text = tp.DocumentRange.GetText(2000);
+                            }
+                        } catch {}
+                    }
+
+                    if (isEditable) {
+                        string safeText = text != null ? Convert.ToBase64String(Encoding.UTF8.GetBytes(text)) : "";
+                        Console.WriteLine("TEXTFOCUS " + safeText);
+                        Console.Out.Flush();
+                    }
+                } catch {
+                    // Suppress automation exceptions
+                }
+            });
+        }
+
         static IAudioEndpointVolume _audio;
         static IAudioEndpointVolume GetAudio() {
             if (_audio != null) return _audio;
@@ -348,6 +593,7 @@ namespace RemoteMouse {
             Console.OutputEncoding = Encoding.UTF8;
             Console.WriteLine("READY");
             LiveAudioReceiver.Start(50005);
+            LiveAudioLoopback.Start(50006);
 
             string line;
             while ((line = Console.ReadLine()) != null) {
@@ -380,7 +626,12 @@ namespace RemoteMouse {
                                 mouse_event(MOUSEEVENTF_MIDDLEDOWN | MOUSEEVENTF_MIDDLEUP, 0, 0, 0, UIntPtr.Zero);
                             } else {
                                 mouse_event(MOUSEEVENTF_LEFTDOWN | MOUSEEVENTF_LEFTUP, 0, 0, 0, UIntPtr.Zero);
+                                CheckFocusedTextFieldAsync();
                             }
+                            break;
+                        }
+                        case "checkfocus": {
+                            CheckFocusedTextFieldAsync();
                             break;
                         }
                         case "scroll": {
@@ -431,7 +682,13 @@ namespace RemoteMouse {
                             }
                             break;
                         }
+                        case "loopback": {
+                            if (rest == "start") LiveAudioLoopback.Start(50006);
+                            else if (rest == "stop") LiveAudioLoopback.Stop();
+                            break;
+                        }
                         case "exit": {
+                            LiveAudioLoopback.Stop();
                             LiveAudioReceiver.Stop();
                             return;
                         }

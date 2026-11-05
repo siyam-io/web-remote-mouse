@@ -14,11 +14,12 @@
     const micLevelBar = document.getElementById('mic-level-bar');
     const speechLangBtn = document.getElementById('speech-lang-btn');
     const speechCloseBtn = document.getElementById('speech-close-btn');
+    const speechEnterBtn = document.getElementById('speech-enter-btn');
 
     if (!micToggleBtn) return;
 
     let isRecording = false;
-    let currentMode = 'womic'; // 'womic' (Live PC Mic) | 'dictation' (Speech-to-Text)
+    let currentMode = 'dictation'; // Default to Voice Dictation (Speech-to-Text)! Toggle to 'womic' anytime.
 
     // WO Mic Audio Streaming State
     let audioContext = null;
@@ -300,6 +301,17 @@
         e.stopPropagation();
         if (currentMode === 'womic') stopWoMic();
         else stopDictation();
+      });
+    }
+
+    // Send Enter Key to PC Button
+    if (speechEnterBtn) {
+      speechEnterBtn.addEventListener('click', (e) => {
+        e.preventDefault();
+        e.stopPropagation();
+        window.AppState.requestWakeLock();
+        window.AppState.haptic(25);
+        window.AppConnection.send({ type: 'keyboard_key', key: 'Enter' });
       });
     }
 

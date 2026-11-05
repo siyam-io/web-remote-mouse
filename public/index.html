@@ -8,6 +8,11 @@
   <meta name="theme-color" content="#0a0d14">
   <title>Web Remote Mouse</title>
 
+  <!-- PWA & Mobile App Support -->
+  <link rel="manifest" href="/manifest.json">
+  <link rel="icon" type="image/svg+xml" href="/icon.svg">
+  <link rel="apple-touch-icon" href="/icon.svg">
+
   <!-- Modular Component Stylesheets -->
   <link rel="stylesheet" href="css/variables.css">
   <link rel="stylesheet" href="css/header.css">
@@ -15,15 +20,28 @@
   <link rel="stylesheet" href="css/air-mouse.css">
   <link rel="stylesheet" href="css/controls.css">
   <link rel="stylesheet" href="css/panels.css">
+  <link rel="stylesheet" href="css/cam.css">
 </head>
 <body>
   <div id="app">
     <!-- Top Bar -->
     <header>
-      <div class="brand">
-        <div id="status-badge" class="status-badge">
-          <div class="indicator-dot"></div>
-          <span id="status-text">Connecting...</span>
+      <div class="header-left-group">
+        <!-- Hamburger Menu Button (☰) - On the Left Side -->
+        <button id="menu-toggle-btn" class="icon-btn menu-btn" aria-label="Open Tools Menu" title="Menu & Features">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.3" stroke-linecap="round" stroke-linejoin="round">
+            <line x1="3" y1="6" x2="21" y2="6"></line>
+            <line x1="3" y1="12" x2="21" y2="12"></line>
+            <line x1="3" y1="18" x2="21" y2="18"></line>
+          </svg>
+          <span id="menu-active-dot" class="menu-active-dot" style="display: none;"></span>
+        </button>
+
+        <div class="brand">
+          <div id="status-badge" class="status-badge">
+            <div class="indicator-dot"></div>
+            <span id="status-text">Connecting...</span>
+          </div>
         </div>
       </div>
 
@@ -44,65 +62,135 @@
       </div>
 
       <div class="header-actions">
-        <!-- Voice Dictation / Mic Button (🎙️) -->
-        <button id="mic-toggle-btn" class="icon-btn mic-btn" aria-label="Voice Dictation" title="Voice to Text Typing (Mic)">
-          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-            <path d="M12 2a3 3 0 0 0-3 3v7a3 3 0 0 0 6 0V5a3 3 0 0 0-3-3z"></path>
-            <path d="M19 10v2a7 7 0 0 1-14 0v-2"></path>
-            <line x1="12" y1="19" x2="12" y2="22"></line>
-            <line x1="8" y1="22" x2="16" y2="22"></line>
-          </svg>
-        </button>
+        <!-- Desktop Quick Actions (Visible only on Desktop/Tablet >= 768px) -->
+        <div class="desktop-actions">
+          <!-- AudioRelay Wireless Headphones Button (🎧) -->
+          <button id="audiorelay-toggle-btn" class="icon-btn audiorelay-btn" aria-label="AudioRelay Wireless Headphones" title="Listen to PC Audio on Phone (AudioRelay)">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M3 18v-6a9 9 0 0 1 18 0v6"></path>
+              <path d="M21 19a2 2 0 0 1-2 2h-1a2 2 0 0 1-2-2v-3a2 2 0 0 1 2-2h3zM3 19a2 2 0 0 0 2 2h1a2 2 0 0 0 2-2v-3a2 2 0 0 0-2-2H3z"></path>
+            </svg>
+          </button>
 
-        <!-- Settings Toggle Button (⚙️) -->
-        <button id="settings-toggle-btn" class="icon-btn" aria-label="Settings" title="Settings & Sensitivity">
-          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-            <circle cx="12" cy="12" r="3"></circle>
-            <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"></path>
-          </svg>
-        </button>
+          <!-- DroidCam / Video Stream Button (📹) -->
+          <button id="cam-toggle-btn" class="icon-btn cam-btn" aria-label="Camera Video Stream" title="Stream Phone Camera to PC (DroidCam)">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M23 7l-7 5 7 5V7z"></path>
+              <rect x="1" y="5" width="15" height="14" rx="2" ry="2"></rect>
+            </svg>
+          </button>
 
-        <!-- Keyboard Toggle Button -->
-        <button id="keyboard-toggle-btn" class="icon-btn" aria-label="Toggle Keyboard" title="Keyboard Controls">
-          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-            <rect x="2" y="4" width="20" height="16" rx="2" ry="2"></rect>
-            <line x1="6" y1="8" x2="6.01" y2="8"></line>
-            <line x1="10" y1="8" x2="10.01" y2="8"></line>
-            <line x1="14" y1="8" x2="14.01" y2="8"></line>
-            <line x1="18" y1="8" x2="18.01" y2="8"></line>
-            <line x1="6" y1="12" x2="6.01" y2="12"></line>
-            <line x1="10" y1="12" x2="10.01" y2="12"></line>
-            <line x1="14" y1="12" x2="14.01" y2="12"></line>
-            <line x1="18" y1="12" x2="18.01" y2="12"></line>
-            <line x1="7" y1="16" x2="17" y2="16"></line>
-          </svg>
-        </button>
+          <!-- Voice Dictation / Mic Button (🎙️) -->
+          <button id="mic-toggle-btn" class="icon-btn mic-btn" aria-label="Voice Dictation" title="Voice to Text Typing (Mic)">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M12 2a3 3 0 0 0-3 3v7a3 3 0 0 0 6 0V5a3 3 0 0 0-3-3z"></path>
+              <path d="M19 10v2a7 7 0 0 1-14 0v-2"></path>
+              <line x1="12" y1="19" x2="12" y2="22"></line>
+              <line x1="8" y1="22" x2="16" y2="22"></line>
+            </svg>
+          </button>
 
-        <!-- Fullscreen Button -->
-        <button id="fullscreen-btn" class="icon-btn" aria-label="Toggle Fullscreen" title="Toggle Fullscreen">
-          <svg id="fs-icon" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-            <path d="M8 3H5a2 2 0 0 0-2 2v3m18 0V5a2 2 0 0 0-2-2h-3m0 18h3a2 2 0 0 0 2-2v-3M3 16v3a2 2 0 0 0 2 2h3"></path>
-          </svg>
-        </button>
+          <!-- Settings Toggle Button (⚙️) -->
+          <button id="settings-toggle-btn" class="icon-btn" aria-label="Settings" title="Settings & Sensitivity">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <circle cx="12" cy="12" r="3"></circle>
+              <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"></path>
+            </svg>
+          </button>
+
+          <!-- Keyboard Toggle Button -->
+          <button id="keyboard-toggle-btn" class="icon-btn" aria-label="Toggle Keyboard" title="Keyboard Controls">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <rect x="2" y="4" width="20" height="16" rx="2" ry="2"></rect>
+              <line x1="6" y1="8" x2="6.01" y2="8"></line>
+              <line x1="10" y1="8" x2="10.01" y2="8"></line>
+              <line x1="14" y1="8" x2="14.01" y2="8"></line>
+              <line x1="18" y1="8" x2="18.01" y2="8"></line>
+              <line x1="6" y1="12" x2="6.01" y2="12"></line>
+              <line x1="10" y1="12" x2="10.01" y2="12"></line>
+              <line x1="14" y1="12" x2="14.01" y2="12"></line>
+              <line x1="18" y1="12" x2="18.01" y2="12"></line>
+              <line x1="7" y1="16" x2="17" y2="16"></line>
+            </svg>
+          </button>
+
+          <!-- Fullscreen Button -->
+          <button id="fullscreen-btn" class="icon-btn" aria-label="Toggle Fullscreen" title="Toggle Fullscreen">
+            <svg id="fs-icon" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M8 3H5a2 2 0 0 0-2 2v3m18 0V5a2 2 0 0 0-2-2h-3m0 18h3a2 2 0 0 0 2-2v-3M3 16v3a2 2 0 0 0 2 2h3"></path>
+            </svg>
+          </button>
+        </div>
       </div>
     </header>
 
-    <!-- Floating Live Mic & WO Mic Overlay Banner -->
+    <!-- Floating Live Mic & Voice Typing Overlay Banner -->
     <div id="speech-overlay" class="speech-overlay">
       <div class="speech-status-group">
         <div class="speech-recording-dot"></div>
         <div class="speech-text-wrap">
-          <span id="speech-mode-badge" class="speech-mode-badge">WO MIC (LIVE PC MIC)</span>
-          <span id="speech-text" class="speech-text">Streaming phone mic to PC...</span>
-          <div id="mic-level-container" class="mic-level-container">
+          <span id="speech-mode-badge" class="speech-mode-badge">VOICE TYPING</span>
+          <span id="speech-text" class="speech-text">Listening... Speak now</span>
+          <div id="mic-level-container" class="mic-level-container" style="display: none;">
             <div id="mic-level-bar" class="mic-level-bar"></div>
           </div>
         </div>
       </div>
       <div class="speech-actions">
-        <button id="mic-mode-toggle" class="mic-mode-toggle" type="button" title="Switch between WO Mic and Voice Typing">Mode: Live</button>
-        <button id="speech-lang-btn" class="speech-lang-btn" type="button" title="Switch Voice Language" style="display:none;">EN</button>
+        <button id="speech-enter-btn" class="speech-enter-btn" type="button" title="Send / Press Enter on PC">↵ Enter</button>
+        <button id="mic-mode-toggle" class="mic-mode-toggle" type="button" title="Switch between Voice Typing and Live PC Mic">Mode: Type</button>
+        <button id="speech-lang-btn" class="speech-lang-btn" type="button" title="Switch Voice Language">EN</button>
         <button id="speech-close-btn" class="speech-close-btn" type="button" aria-label="Stop Mic">✕</button>
+      </div>
+    </div>
+
+    <!-- Floating DroidCam Live Camera Overlay Banner -->
+    <div id="cam-overlay" class="cam-overlay">
+      <div class="cam-status-group">
+        <div class="cam-preview-wrap">
+          <video id="cam-preview-video" playsinline autoplay muted></video>
+          <div class="cam-recording-dot"></div>
+        </div>
+        <div class="cam-text-wrap">
+          <div class="cam-title-row">
+            <span id="cam-mode-badge" class="cam-mode-badge">DROIDCAM HD</span>
+            <span id="cam-fps-badge" class="cam-fps-badge">0 FPS</span>
+          </div>
+          <span id="cam-status-text" class="cam-status-text">Streaming camera to PC...</span>
+          <div class="cam-url-hint">PC View: <a id="cam-pc-link" href="/camera" target="_blank">/camera</a></div>
+        </div>
+      </div>
+      <div class="cam-actions">
+        <button id="cam-zoom-btn" class="cam-btn-action" type="button" title="Zoom Camera (1x / 2x / 3x)">1x</button>
+        <button id="cam-flip-btn" class="cam-btn-action" type="button" title="Flip Camera (Front/Back)">🔄</button>
+        <button id="cam-torch-btn" class="cam-btn-action" type="button" title="Toggle Flashlight / Torch" style="display: none;">⚡</button>
+        <button id="cam-quality-btn" class="cam-btn-action" type="button" title="Toggle Resolution (1080p / 720p / 480p)">720P</button>
+        <button id="cam-close-btn" class="cam-close-btn" type="button" aria-label="Stop Camera">✕</button>
+      </div>
+    </div>
+
+    <!-- Floating AudioRelay PC Audio to Phone Banner -->
+    <div id="audiorelay-overlay" class="audiorelay-overlay">
+      <div class="audiorelay-status-group">
+        <div class="audiorelay-icon-badge">🎧</div>
+        <div class="audiorelay-text-wrap">
+          <div class="audiorelay-title-row">
+            <span class="audiorelay-badge">AUDIORELAY (PC AUDIO)</span>
+            <span id="audiorelay-latency-badge" class="audiorelay-latency-badge">~25ms | 48kHz</span>
+          </div>
+          <span id="audiorelay-status-text" class="audiorelay-status-text">Playing PC Sound through Phone...</span>
+        </div>
+      </div>
+      <div class="audiorelay-controls">
+        <div class="audiorelay-vol-wrap">
+          <div class="audiorelay-vol-info">
+            <span class="audiorelay-vol-label">VOL</span>
+            <span id="audiorelay-vol-badge" class="audiorelay-vol-badge">100%</span>
+          </div>
+          <input id="audiorelay-vol-slider" class="audiorelay-vol-slider" type="range" min="0" max="600" step="5" value="100" title="AudioRelay Volume & Preamp Boost (Up to 600%)">
+        </div>
+        <button id="audiorelay-boost-btn" class="audiorelay-boost-btn" type="button" title="Quick Boost to 200% / 500% / 800%">🚀 Boost</button>
+        <button id="audiorelay-close-btn" class="audiorelay-close-btn" type="button" aria-label="Stop AudioRelay">✕</button>
       </div>
     </div>
 
@@ -120,8 +208,8 @@
             <span>1 Tap : Left Click</span>
           </div>
           <div class="guide-item">
-            <span class="guide-icon">✌️</span>
-            <span>2 Fingers : Scroll</span>
+            <span class="guide-icon">↕️</span>
+            <span>Right Bar : 1-Finger Scroll</span>
           </div>
         </div>
 
@@ -194,6 +282,18 @@
           <span id="scroll-overlay-text">Scrolling</span>
         </div>
       </main>
+
+      <!-- Right-Side 1-Finger Scroll Bar -->
+      <aside id="scroll-bar" class="scroll-bar" aria-label="1-Finger Scroll Bar" title="Slide 1 finger to scroll">
+        <button id="scroll-btn-up" class="scroll-btn scroll-btn-up" type="button" aria-label="Scroll Up">▲</button>
+        <div id="scroll-track" class="scroll-track">
+          <div class="scroll-grooves">
+            <span></span><span></span><span></span><span></span><span></span>
+          </div>
+          <div id="scroll-thumb" class="scroll-thumb"></div>
+        </div>
+        <button id="scroll-btn-down" class="scroll-btn scroll-btn-down" type="button" aria-label="Scroll Down">▼</button>
+      </aside>
     </div>
 
     <!-- Compact Volume Bar -->
@@ -305,16 +405,11 @@
         <button id="kb-close-btn" class="panel-close-btn" type="button" aria-label="Close Keyboard">✕</button>
       </div>
 
-      <!-- Live Typing Field -->
+      <!-- Real-Time Synchronized Full Text Input Field (Single Field) -->
       <div class="kb-realtime-box">
-        <input id="live-type-input" type="text" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false" placeholder="Tap here to type in real-time..." />
+        <textarea id="live-type-input" rows="3" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false" placeholder="Tap to type in real-time or edit PC text..."></textarea>
+        <button id="btn-clear-text" class="btn-clear-text" type="button" title="Clear text">✕</button>
       </div>
-
-      <!-- Batch text sender for complete sentences/URLs/passwords -->
-      <form id="batch-form" class="kb-batch-form" onsubmit="return false;">
-        <input id="batch-text-input" type="text" autocomplete="off" placeholder="Or enter full text / URL..." />
-        <button id="btn-send-text" class="btn-send" type="button">Send</button>
-      </form>
 
       <!-- Quick Action Keys -->
       <div class="kb-actions-grid">
@@ -335,6 +430,170 @@
         </div>
       </div>
     </div>
+
+    <!-- Hamburger Tools Menu Drawer (All Options Full & Accessible) -->
+    <div id="menu-drawer" class="drawer-panel menu-drawer" aria-label="Tools Menu">
+      <div class="panel-header">
+        <div class="panel-title">
+          <span>🛠️</span>
+          <span>Remote Features & Tools</span>
+        </div>
+        <button id="menu-close-btn" class="panel-close-btn" type="button" aria-label="Close Menu">✕</button>
+      </div>
+
+      <div class="menu-items-list">
+        <!-- 1. AudioRelay -->
+        <div class="menu-card" id="card-audiorelay">
+          <div class="menu-card-left">
+            <div class="menu-card-icon icon-audio">🎧</div>
+            <div class="menu-card-info">
+              <div class="menu-card-title">AudioRelay (PC Audio)</div>
+              <div class="menu-card-desc">Hear PC sound through phone headphones</div>
+            </div>
+          </div>
+          <button id="menu-audiorelay-btn" class="menu-action-btn" type="button">Start</button>
+        </div>
+
+        <!-- 2. DroidCam -->
+        <div class="menu-card" id="card-cam">
+          <div class="menu-card-left">
+            <div class="menu-card-icon icon-cam">📹</div>
+            <div class="menu-card-info">
+              <div class="menu-card-title">DroidCam (HD Webcam)</div>
+              <div class="menu-card-desc">Stream phone camera to PC for Zoom/OBS</div>
+            </div>
+          </div>
+          <button id="menu-cam-btn" class="menu-action-btn" type="button">Start</button>
+        </div>
+
+        <!-- 3. Voice Typing / Mic -->
+        <div class="menu-card" id="card-mic">
+          <div class="menu-card-left">
+            <div class="menu-card-icon icon-mic">🎙️</div>
+            <div class="menu-card-info">
+              <div class="menu-card-title">Voice Typing (Mic)</div>
+              <div class="menu-card-desc">Speak into phone to type text on PC</div>
+            </div>
+          </div>
+          <button id="menu-mic-btn" class="menu-action-btn" type="button">Start</button>
+        </div>
+
+        <!-- 4. Virtual Keyboard -->
+        <div class="menu-card" id="card-keyboard">
+          <div class="menu-card-left">
+            <div class="menu-card-icon icon-kb">⌨️</div>
+            <div class="menu-card-info">
+              <div class="menu-card-title">Remote Keyboard</div>
+              <div class="menu-card-desc">Typing, Enter, Backspace & Arrow keys</div>
+            </div>
+          </div>
+          <button id="menu-keyboard-btn" class="menu-action-btn" type="button">Open</button>
+        </div>
+
+        <!-- 5. Settings -->
+        <div class="menu-card" id="card-settings">
+          <div class="menu-card-left">
+            <div class="menu-card-icon icon-settings">⚙️</div>
+            <div class="menu-card-info">
+              <div class="menu-card-title">Settings & Sensitivity</div>
+              <div class="menu-card-desc">Mouse speed, scroll sensitivity & invert</div>
+            </div>
+          </div>
+          <button id="menu-settings-btn" class="menu-action-btn" type="button">Open</button>
+        </div>
+
+        <!-- 6. Fullscreen -->
+        <div class="menu-card" id="card-fullscreen">
+          <div class="menu-card-left">
+            <div class="menu-card-icon icon-fs">⛶</div>
+            <div class="menu-card-info">
+              <div class="menu-card-title">Fullscreen Mode</div>
+              <div class="menu-card-desc">Maximize workspace on your phone</div>
+            </div>
+          </div>
+          <button id="menu-fullscreen-btn" class="menu-action-btn" type="button">Toggle</button>
+        </div>
+
+        <!-- 7. File & Data Sharing (Mobile -> PC) -->
+        <div class="menu-card" id="card-fileshare">
+          <div class="menu-card-left">
+            <div class="menu-card-icon icon-files">📁</div>
+            <div class="menu-card-info">
+              <div class="menu-card-title">File & Data Transfer</div>
+              <div class="menu-card-desc">Send photos, files & links to PC Downloads</div>
+            </div>
+          </div>
+          <button id="menu-fileshare-btn" class="menu-action-btn" type="button">Open</button>
+        </div>
+
+        <!-- 8. Download / Install as Native App -->
+        <div class="menu-card" id="card-install-app">
+          <div class="menu-card-left">
+            <div class="menu-card-icon icon-install">📲</div>
+            <div class="menu-card-info">
+              <div class="menu-card-title">Download / Install App</div>
+              <div class="menu-card-desc">Install on phone as native Android/iOS app</div>
+            </div>
+          </div>
+          <button id="menu-install-btn" class="menu-action-btn btn-install" type="button">Install</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- File & Data Transfer Modal (Mobile to PC) -->
+    <div id="fileshare-modal" class="install-modal fileshare-modal" style="display: none;">
+      <div class="install-modal-content fileshare-content">
+        <div class="install-modal-header">
+          <div class="install-modal-title">📁 File & Data Transfer to PC</div>
+          <button id="fileshare-modal-close" class="panel-close-btn" type="button">✕</button>
+        </div>
+
+        <div class="fileshare-body">
+          <!-- Section 1: File/Photo Upload -->
+          <div class="fileshare-section">
+            <span class="fileshare-subtitle">📤 Send Files & Photos</span>
+            <input type="file" id="file-transfer-input" multiple style="display: none;" />
+            <button id="btn-pick-files" class="btn-pick-files" type="button">
+              <span class="pick-icon">📎</span>
+              <span>Select Photos or Files to Send</span>
+            </button>
+            <div id="fileshare-progress-wrap" class="fileshare-progress-wrap" style="display: none;">
+              <div class="fileshare-progress-bar-bg">
+                <div class="fileshare-progress-bar" id="fileshare-progress-bar"></div>
+              </div>
+              <span id="fileshare-status" class="fileshare-status">Uploading...</span>
+            </div>
+            <span class="fileshare-hint">Saved instantly to PC: <strong>Downloads folder</strong></span>
+          </div>
+
+          <!-- Section 2: Clipboard / Text / Link Share -->
+          <div class="fileshare-section">
+            <span class="fileshare-subtitle">📋 Send Text or Link to PC Clipboard</span>
+            <div class="fileshare-text-box">
+              <input type="text" id="clipboard-share-input" placeholder="Type or paste URL / text..." />
+              <button id="btn-send-clipboard" class="btn-send-clipboard" type="button">Copy to PC</button>
+            </div>
+            <span id="clipboard-status" class="clipboard-status" style="display: none;"></span>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Install App Guide Modal -->
+    <div id="install-modal" class="install-modal" style="display: none;">
+      <div class="install-modal-content">
+        <div class="install-modal-header">
+          <div class="install-modal-title">📲 Install Remote Mouse</div>
+          <button id="install-modal-close" class="panel-close-btn" type="button">✕</button>
+        </div>
+        <div class="install-modal-body">
+          <p class="install-step"><strong>1.</strong> Tap your mobile browser menu (<strong>3 dots ⋮</strong> at top right).</p>
+          <p class="install-step"><strong>2.</strong> Select <strong>"Install app"</strong> or <strong>"Add to Home screen"</strong>.</p>
+          <p class="install-step"><strong>3.</strong> Tap <strong>"Install"</strong> — it will appear directly on your home screen and app drawer!</p>
+        </div>
+        <button id="install-modal-ok-btn" class="btn-install-dialog" type="button">Got it</button>
+      </div>
+    </div>
   </div>
 
   <!-- Modular Component Scripts -->
@@ -344,6 +603,8 @@
   <script src="js/air-mouse.js"></script>
   <script src="js/controls.js"></script>
   <script src="js/mic.js"></script>
+  <script src="js/cam.js"></script>
+  <script src="js/audio-relay.js"></script>
   <script src="js/keyboard.js"></script>
   <script src="js/panels.js"></script>
   <script src="js/app.js"></script>

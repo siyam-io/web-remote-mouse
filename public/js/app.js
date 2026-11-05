@@ -36,8 +36,17 @@
     window.AirMouseModule.init();
     window.ControlsModule.init();
     window.MicModule.init();
+    if (window.CamModule) window.CamModule.init();
+    if (window.AudioRelayModule) window.AudioRelayModule.init();
     window.KeyboardModule.init();
     window.PanelsModule.init();
+
+    // 3. Register Offline-First PWA Service Worker for instant load & auto-discovery
+    if ('serviceWorker' in navigator) {
+      navigator.serviceWorker.register('/service-worker.js').catch((err) => {
+        console.warn('[ServiceWorker] Registration warning:', err.message || err);
+      });
+    }
 
     console.log('[RemoteMouse] All modules initialized successfully.');
   });

@@ -171,6 +171,112 @@
       touchIndicator.style.display = 'none';
       touchCount = 0;
     });
+
+    // --- Right-Side 1-Finger Scroll Bar ---
+    const scrollBar = document.getElementById('scroll-bar');
+    const scrollTrack = document.getElementById('scroll-track');
+    const scrollThumb = document.getElementById('scroll-thumb');
+    const scrollBtnUp = document.getElementById('scroll-btn-up');
+    const scrollBtnDown = document.getElementById('scroll-btn-down');
+
+    function sendScrollEvent(steps, direction) {
+      window.AppState.requestWakeLock();
+      window.AppState.haptic(15);
+      const dy = direction === 'down' ? steps : -steps;
+      window.AppConnection.send({
+        type: 'scroll',
+        dy: dy,
+        direction: direction,
+        amount: Math.abs(steps)
+      });
+      showScrollIndicator(direction === 'down' ? 'Scroll Down ↓' : 'Scroll Up ↑');
+    }
+
+    if (scrollBtnUp) {
+      const triggerUp = (e) => {
+        e.preventDefault();
+        e.stopPropagation();
+        sendScrollEvent(3, 'up');
+      };
+      scrollBtnUp.addEventListener('touchstart', triggerUp, { passive: false });
+      scrollBtnUp.addEventListener('mousedown', triggerUp);
+    }
+
+    if (scrollBtnDown) {
+      const triggerDown = (e) => {
+        e.preventDefault();
+        e.stopPropagation();
+        sendScrollEvent(3, 'down');
+      };
+      scrollBtnDown.addEventListener('touchstart', triggerDown, { passive: false });
+      scrollBtnDown.addEventListener('mousedown', triggerDown);
+    }
+
+    if (scrollBar) {
+      const SCROLL_CHUNK_PX = 9;
+      let isScrollBarTouching = false;
+      let scrollBarLastY = 0;
+      let scrollAccumulator = 0;
+
+      function updateThumbPos(clientY) {
+        if (!scrollThumb || !scrollTrack) return;
+        const rect = scrollTrack.getBoundingClientRect();
+        const clampedY = Math.max(rect.top + 20, Math.min(rect.bottom - 20, clientY));
+        const relY = clampedY - rect.top;
+        scrollThumb.style.top = `${relY}px`;
+      }
+
+      scrollBar.addEventListener('touchstart', (e) => {
+        if (e.target === scrollBtnUp || e.target === scrollBtnDown) return;
+        e.preventDefault();
+        e.stopPropagation();
+        window.AppState.requestWakeLock();
+        isScrollBarTouching = true;
+        scrollBar.classList.add('active');
+        const touch = e.touches[0];
+        scrollBarLastY = touch.clientY;
+        scrollAccumulator = 0;
+        updateThumbPos(touch.clientY);
+      }, { passive: false });
+
+      scrollBar.addEventListener('touchmove', (e) => {
+        if (!isScrollBarTouching) return;
+        e.preventDefault();
+        e.stopPropagation();
+        const touch = e.touches[0];
+        const rawDy = touch.clientY - scrollBarLastY;
+        scrollBarLastY = touch.clientY;
+        scrollAccumulator += rawDy;
+
+        updateThumbPos(touch.clientY);
+
+        if (Math.abs(scrollAccumulator) >= SCROLL_CHUNK_PX) {
+          const rawSteps = Math.round(scrollAccumulator / SCROLL_CHUNK_PX);
+          let isDown = rawSteps > 0;
+          if (window.AppState.invertScroll) isDown = !isDown;
+
+          const steps = Math.max(1, Math.min(8, Math.abs(rawSteps)));
+          const direction = isDown ? 'down' : 'up';
+          sendScrollEvent(steps, direction);
+
+          scrollAccumulator = scrollAccumulator % SCROLL_CHUNK_PX;
+        }
+      }, { passive: false });
+
+      const stopScrollBar = (e) => {
+        if (!isScrollBarTouching) return;
+        if (e) { e.preventDefault(); e.stopPropagation(); }
+        isScrollBarTouching = false;
+        scrollBar.classList.remove('active');
+        scrollAccumulator = 0;
+        if (scrollThumb) {
+          scrollThumb.style.top = '50%';
+        }
+      };
+
+      scrollBar.addEventListener('touchend', stopScrollBar, { passive: false });
+      scrollBar.addEventListener('touchcancel', stopScrollBar, { passive: false });
+    }
   }
 
   window.TrackpadModule = { init: initTrackpad };
