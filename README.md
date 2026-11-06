@@ -85,6 +85,7 @@ A modern, zero-install, ultra-responsive Web Remote Mouse, Keyboard, Gyro Air Mo
 - Built-in Screen WakeLock API prevents your phone display from turning off while in use.
 
 ### 10. 🎮 Virtual Gaming Controller (Gamepad)
+- **Multi-Device Local Multiplayer (Player 1 - Player 4)**: Connect multiple phones simultaneously over Wi-Fi! Select **Player 1** (WASD) on one phone and **Player 2** (Arrow Keys / IJKL + Numpad) on another to play 2-player split-screen games, fighting games, or retro emulators together on the same PC. Supports up to 4 concurrent players.
 - **Multi-Touch Gaming Layout**: Dedicated left-thumb navigation and right-thumb action clusters supporting simultaneous inputs.
 - **Dynamic 360° Analog Joystick / D-Pad**: Smooth virtual thumbstick with spring-back deadzone mapping to WASD or Arrow keys. Quick-switch to 4-way D-Pad with a single tap.
 - **Diamond Action Cluster (ABXY)**:
