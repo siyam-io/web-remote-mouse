@@ -405,11 +405,14 @@
         <button id="kb-close-btn" class="panel-close-btn" type="button" aria-label="Close Keyboard">✕</button>
       </div>
 
-      <!-- Real-Time Synchronized Full Text Input Field (Single Field) -->
-      <div class="kb-realtime-box">
-        <textarea id="live-type-input" rows="3" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false" placeholder="Tap to type in real-time or edit PC text..."></textarea>
-        <button id="btn-clear-text" class="btn-clear-text" type="button" title="Clear text">✕</button>
-      </div>
+      <!-- Invisible Proxy Input for Native Mobile Keyboard Streaming -->
+      <input type="text" id="live-type-input" class="kb-proxy-input" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false" aria-label="Type here">
+
+      <!-- Interactive Tap Area to Bring Up Mobile Soft Keyboard -->
+      <button id="btn-open-ime" class="kb-type-prompt-btn" type="button">
+        <span class="kb-prompt-icon">⌨️</span>
+        <span class="kb-prompt-text">Tap to open phone keyboard & type</span>
+      </button>
 
       <!-- Quick Action Keys -->
       <div class="kb-actions-grid">

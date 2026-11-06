@@ -1,17 +1,25 @@
 /**
- * keyboard.js - Virtual Keyboard Synchronized Live Full-Text Typing & Action Keys
+ * keyboard.js - Virtual Keyboard Direct Keystroke Streaming & Action Keys
  */
 (function (window) {
   'use strict';
 
   function initKeyboard() {
     const liveTypeInput = document.getElementById('live-type-input');
-    const btnClearText = document.getElementById('btn-clear-text');
+    const btnOpenIme = document.getElementById('btn-open-ime');
 
     if (!liveTypeInput) return;
 
-    let prevLiveVal = '';
     let isComposing = false;
+
+    // Tap Prompt Button to Focus Hidden Proxy Input & Trigger Mobile IME
+    if (btnOpenIme) {
+      btnOpenIme.addEventListener('click', (e) => {
+        e.preventDefault();
+        e.stopPropagation();
+        liveTypeInput.focus();
+      });
+    }
 
     // Mobile Virtual Keyboard IME Composition Support
     liveTypeInput.addEventListener('compositionstart', () => {
@@ -23,19 +31,25 @@
       if (e.data) {
         window.AppConnection.send({ type: 'keyboard_type', text: e.data });
       }
-      prevLiveVal = liveTypeInput.value;
+      liveTypeInput.value = '';
     });
 
     function resetState() {
       if (liveTypeInput) liveTypeInput.value = '';
-      prevLiveVal = '';
     }
 
-    // Expose resetState on module so panels.js can clear previous state when closing/opening
+    // Expose resetState on module so panels.js can clear state when closing/opening
     window.KeyboardModule = window.KeyboardModule || {};
     window.KeyboardModule.resetState = resetState;
+    window.KeyboardModule.focusInput = function () {
+      if (liveTypeInput) {
+        try {
+          liveTypeInput.focus();
+        } catch (_) {}
+      }
+    };
 
-    // Special Keys on Live Input (Tab, Esc, Enter)
+    // Special Keys on Live Input (Tab, Esc, Enter, Backspace)
     liveTypeInput.addEventListener('keydown', (e) => {
       if (e.key === 'Tab') {
         e.preventDefault();
@@ -44,16 +58,13 @@
         e.preventDefault();
         window.AppConnection.send({ type: 'keyboard_key', key: 'Escape' });
       } else if (e.key === 'Enter') {
-        // Send / Submit on Enter (without Shift): sends Enter to PC and clears state
-        if (!e.shiftKey) {
-          e.preventDefault();
-          window.AppConnection.send({ type: 'keyboard_key', key: 'Enter' });
-          resetState();
-        }
+        e.preventDefault();
+        window.AppConnection.send({ type: 'keyboard_key', key: 'Enter' });
+        resetState();
       }
     });
 
-    // Full-Text Diff Synchronizer (Syncs mobile textarea edits to PC in real-time)
+    // Real-Time Direct Keystroke Streaming (No persistent text state)
     liveTypeInput.addEventListener('input', (e) => {
       if (isComposing) return;
 
@@ -61,62 +72,14 @@
 
       if (e.inputType === 'deleteContentBackward') {
         window.AppConnection.send({ type: 'keyboard_key', key: 'Backspace' });
-        prevLiveVal = currentVal;
-        return;
-      }
-
-      if (e.inputType === 'insertLineBreak') {
+      } else if (e.inputType === 'insertLineBreak') {
         window.AppConnection.send({ type: 'keyboard_key', key: 'Enter' });
-        resetState();
-        return;
+      } else if (currentVal.length > 0) {
+        window.AppConnection.send({ type: 'keyboard_type', text: currentVal });
       }
 
-      // Appending to the end
-      if (currentVal.startsWith(prevLiveVal)) {
-        const added = currentVal.substring(prevLiveVal.length);
-        if (added.length > 0) {
-          window.AppConnection.send({ type: 'keyboard_type', text: added });
-        }
-      } else if (prevLiveVal.startsWith(currentVal)) {
-        // Deleting from the end
-        const diff = prevLiveVal.length - currentVal.length;
-        for (let i = 0; i < diff; i++) {
-          window.AppConnection.send({ type: 'keyboard_key', key: 'Backspace' });
-        }
-      } else {
-        // Mid-text edit, paste, or block replacement: prefix & suffix diff
-        let prefixLen = 0;
-        while (prefixLen < prevLiveVal.length && prefixLen < currentVal.length && prevLiveVal[prefixLen] === currentVal[prefixLen]) {
-          prefixLen++;
-        }
-        let suffixLen = 0;
-        while (suffixLen < (prevLiveVal.length - prefixLen) && suffixLen < (currentVal.length - prefixLen) &&
-               prevLiveVal[prevLiveVal.length - 1 - suffixLen] === currentVal[currentVal.length - 1 - suffixLen]) {
-          suffixLen++;
-        }
-        const toDelete = prevLiveVal.length - prefixLen - suffixLen;
-        const toInsert = currentVal.substring(prefixLen, currentVal.length - suffixLen);
-
-        for (let i = 0; i < toDelete; i++) {
-          window.AppConnection.send({ type: 'keyboard_key', key: 'Backspace' });
-        }
-        if (toInsert.length > 0) {
-          window.AppConnection.send({ type: 'keyboard_type', text: toInsert });
-        }
-      }
-
-      prevLiveVal = currentVal;
+      liveTypeInput.value = '';
     });
-
-    // Clear Text Button (Clears local typing box)
-    if (btnClearText) {
-      btnClearText.addEventListener('click', (e) => {
-        e.preventDefault();
-        e.stopPropagation();
-        resetState();
-        liveTypeInput.focus();
-      });
-    }
 
     // Quick Action Keys (Esc, Tab, Space, Backspace, Enter, Arrows)
     const actionKeys = document.querySelectorAll('.kb-key-btn');
@@ -130,15 +93,7 @@
         btn.classList.add('key-pressed');
         window.AppConnection.send({ type: 'keyboard_key', key: key });
 
-        // Update local text value for backspace/enter if applicable
-        if (key === 'Backspace' && liveTypeInput.value.length > 0) {
-          liveTypeInput.value = liveTypeInput.value.slice(0, -1);
-          prevLiveVal = liveTypeInput.value;
-        } else if (key === 'Space') {
-          liveTypeInput.value += ' ';
-          prevLiveVal = liveTypeInput.value;
-        } else if (key === 'Enter') {
-          // Send / Submit on Enter button: clear previous state
+        if (key === 'Enter') {
           resetState();
         }
 
