@@ -41,3 +41,4 @@ Write-Host ""
 Write-Host "========================================================" -ForegroundColor Green
 Write-Host " [SUCCESS] Adapter $adapterName reverted to Automatic DHCP!" -ForegroundColor Green
 Write-Host "========================================================" -ForegroundColor Green
+

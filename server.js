@@ -64,7 +64,7 @@ function startController() {
   }
 
   controllerProc = spawn(CONTROLLER_EXE, [], {
-    stdio: ['pipe', 'pipe', 'inherit'],
+    stdio: ['pipe', 'pipe', 'ignore'],
     windowsHide: true
   });
 

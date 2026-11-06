@@ -60,3 +60,4 @@ Write-Host " [SUCCESS] Your PC IP is now locked to $currentIp!" -ForegroundColor
 Write-Host " Your router will never change this IP again." -ForegroundColor Green
 Write-Host " Mobile App URL: https://${currentIp}:3443" -ForegroundColor Cyan
 Write-Host "========================================================" -ForegroundColor Green
+
