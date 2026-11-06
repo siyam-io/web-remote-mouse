@@ -116,6 +116,8 @@ function sendNativeCommand(cmd) {
     } catch (err) {
       console.error('[Controller Write Error]', err.message || err);
     }
+  } else {
+    console.warn('[Controller] Cannot send command, controllerProc unavailable:', cmd);
   }
 }
 
@@ -305,6 +307,9 @@ wss.on('connection', (ws, req) => {
 
     try {
       const data = JSON.parse(message.toString());
+      if (data.type !== 'ping') {
+        console.log(`[WS-MSG] Type: ${data.type}`, data);
+      }
 
       switch (data.type) {
         case 'ping': {

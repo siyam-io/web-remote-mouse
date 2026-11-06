@@ -529,6 +529,42 @@ namespace RemoteMouse {
             return _audio;
         }
 
+        static void MoveMouse(int dx, int dy) {
+            INPUT[] inputs = new INPUT[1];
+            inputs[0].type = 0; // INPUT_MOUSE
+            inputs[0].u.mi.dx = dx;
+            inputs[0].u.mi.dy = dy;
+            inputs[0].u.mi.dwFlags = MOUSEEVENTF_MOVE;
+            uint r = SendInput(1, inputs, Marshal.SizeOf(typeof(INPUT)));
+            if (r == 0) {
+                mouse_event(MOUSEEVENTF_MOVE, dx, dy, 0, UIntPtr.Zero);
+            }
+        }
+
+        static void MouseClick(uint downFlag, uint upFlag) {
+            INPUT[] inputs = new INPUT[2];
+            inputs[0].type = 0; // INPUT_MOUSE
+            inputs[0].u.mi.dwFlags = downFlag;
+            inputs[1].type = 0;
+            inputs[1].u.mi.dwFlags = upFlag;
+            uint r = SendInput(2, inputs, Marshal.SizeOf(typeof(INPUT)));
+            if (r == 0) {
+                mouse_event(downFlag | upFlag, 0, 0, 0, UIntPtr.Zero);
+            }
+        }
+
+        static void MouseScroll(int amount) {
+            uint dwData = unchecked((uint)(amount * 120));
+            INPUT[] inputs = new INPUT[1];
+            inputs[0].type = 0; // INPUT_MOUSE
+            inputs[0].u.mi.mouseData = dwData;
+            inputs[0].u.mi.dwFlags = MOUSEEVENTF_WHEEL;
+            uint r = SendInput(1, inputs, Marshal.SizeOf(typeof(INPUT)));
+            if (r == 0) {
+                mouse_event(MOUSEEVENTF_WHEEL, 0, 0, dwData, UIntPtr.Zero);
+            }
+        }
+
         const byte VK_VOLUME_MUTE = 0xAD;
         const byte VK_VOLUME_DOWN = 0xAE;
         const byte VK_VOLUME_UP = 0xAF;
@@ -626,18 +662,18 @@ namespace RemoteMouse {
                             if (parts.Length >= 2) {
                                 int dx = int.Parse(parts[0]);
                                 int dy = int.Parse(parts[1]);
-                                mouse_event(MOUSEEVENTF_MOVE, dx, dy, 0, UIntPtr.Zero);
+                                MoveMouse(dx, dy);
                             }
                             break;
                         }
                         case "click": {
                             string btn = rest.ToLower();
                             if (btn == "right") {
-                                mouse_event(MOUSEEVENTF_RIGHTDOWN | MOUSEEVENTF_RIGHTUP, 0, 0, 0, UIntPtr.Zero);
+                                MouseClick(MOUSEEVENTF_RIGHTDOWN, MOUSEEVENTF_RIGHTUP);
                             } else if (btn == "middle") {
-                                mouse_event(MOUSEEVENTF_MIDDLEDOWN | MOUSEEVENTF_MIDDLEUP, 0, 0, 0, UIntPtr.Zero);
+                                MouseClick(MOUSEEVENTF_MIDDLEDOWN, MOUSEEVENTF_MIDDLEUP);
                             } else {
-                                mouse_event(MOUSEEVENTF_LEFTDOWN | MOUSEEVENTF_LEFTUP, 0, 0, 0, UIntPtr.Zero);
+                                MouseClick(MOUSEEVENTF_LEFTDOWN, MOUSEEVENTF_LEFTUP);
                                 CheckFocusedTextFieldAsync();
                             }
                             break;
@@ -656,8 +692,7 @@ namespace RemoteMouse {
                             } else if (parts.Length == 1) {
                                 amount = int.Parse(parts[0]);
                             }
-                            uint dwData = unchecked((uint)(amount * 120));
-                            mouse_event(MOUSEEVENTF_WHEEL, 0, 0, dwData, UIntPtr.Zero);
+                            MouseScroll(amount);
                             break;
                         }
                         case "vol":
