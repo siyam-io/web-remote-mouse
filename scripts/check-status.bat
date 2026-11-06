@@ -1,6 +1,6 @@
 @echo off
 title Remote Mouse Server - Status Check
-cd /d "%~dp0"
+cd /d "%~dp0.."
 
 :check
 cls
@@ -80,7 +80,7 @@ echo  [LOCAL IP]    %MY_IP%
 echo.
 echo ================================================================
 echo  OPTIONS:
-echo   [1] Start Server [Visible Console Window - recommended for debugging]
+echo   [1] Start Server [Visible Console Window]
 echo   [2] Start Server [Silent Background Mode]
 echo   [3] Refresh Status
 echo   [4] Exit

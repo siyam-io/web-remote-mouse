@@ -127,23 +127,23 @@ npm start
 Want the server to start automatically whenever you turn on your PC without having a terminal open?
 
 ### Enable Auto-Start on Boot
-- Double-click **`enable-autostart.bat`**.
+- Double-click **`scripts\enable-autostart.bat`**.
 - It registers Web Remote Mouse in your Windows Startup registry and launches the server silently in the background.
 
 ### Check Server Status Anytime
-- Double-click **`check-status.bat`**.
+- Double-click **`scripts\check-status.bat`**.
 - Gives you an instant status monitor:
   - 🟢 **SERVER ONLINE**: Shows Port 3443 status, Process ID (PID), and active Mobile URL.
   - Option to Restart, Stop, or Open connection in one keystroke.
 
 ### Disable Auto-Start
-- Double-click **`disable-autostart.bat`** to remove it from Windows boot startup.
+- Double-click **`scripts\disable-autostart.bat`** to remove it from Windows boot startup.
 
 ---
 
 ## 🔒 Locking PC Static IP (Recommended)
 Home Wi-Fi routers frequently change PC IP addresses via DHCP, breaking your phone bookmark.
-- Run **`lock-pc-static-ip.bat`** (as Administrator).
+- Run **`scripts\lock-static-ip.bat`** (as Administrator).
 - It binds your PC's active Wi-Fi / Ethernet adapter to its current IP address permanently so your phone bookmark never stops working.
 
 ---
@@ -170,14 +170,17 @@ Home Wi-Fi routers frequently change PC IP addresses via DHCP, breaking your pho
 │   ├── manifest.json         # PWA Web App Manifest
 │   └── sw.js                 # Service Worker for offline asset caching
 ├── scripts/
-│   ├── get-ip.js             # Reliable LAN IP detection helper
+│   ├── check-status.bat      # Live server status & management tool
+│   ├── enable-autostart.bat  # 1-click Windows boot auto-start activator
+│   ├── disable-autostart.bat # 1-click Windows boot auto-start remover
+│   ├── lock-static-ip.bat    # 1-click permanent LAN IP fixer
 │   ├── lock-static-ip.ps1    # PowerShell static IP adapter configuration
-│   └── setup-autostart.ps1   # Task scheduler helper
+│   ├── unlock-dhcp-ip.bat    # Revert to automatic DHCP IP
+│   ├── unlock-dhcp-ip.ps1    # PowerShell DHCP IP adapter configuration
+│   ├── start-hidden.vbs      # Silent background process launcher
+│   └── get-ip.js             # Reliable LAN IP detection helper
 ├── server.js                 # Unified HTTP/HTTPS/WebSocket Node.js backend
-├── start.bat                 # Visible interactive console launcher
-├── enable-autostart.bat      # 1-click Windows boot auto-start activator
-├── check-status.bat          # Live server status & management tool
-├── lock-pc-static-ip.bat     # 1-click permanent LAN IP fixer
+├── start.bat                 # 1-click main console launcher
 └── package.json              # Node.js project manifest & dependencies
 ```
 

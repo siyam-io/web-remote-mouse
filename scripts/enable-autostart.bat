@@ -1,6 +1,6 @@
 @echo off
 title Web Remote Mouse - Enable Windows Auto-Start
-cd /d "%~dp0"
+cd /d "%~dp0.."
 
 echo ================================================================
 echo          Web Remote Mouse - Enable Windows Auto-Start
@@ -15,14 +15,11 @@ if not exist "bin\controller.exe" (
     )
 )
 
-:: 2. Register in Windows Registry & Startup Folder
+:: 2. Register in Windows Registry Run Key
 echo [1/3] Registering auto-start on Windows boot...
-cscript //nologo setup-autostart.vbs
-if errorlevel 1 (
-    :: Fallback: Add Registry Run key directly via reg command
-    reg add "HKCU\Software\Microsoft\Windows\CurrentVersion\Run" /v "RemoteMouseServer" /t REG_SZ /d "\"%SystemRoot%\System32\wscript.exe\" \"%~dp0start-hidden.vbs\"" /f >nul 2>&1
-    echo [SUCCESS] Auto-start registered directly via Windows Registry.
-)
+set "VBS_PATH=%~dp0start-hidden.vbs"
+reg add "HKCU\Software\Microsoft\Windows\CurrentVersion\Run" /v "RemoteMouseServer" /t REG_SZ /d "\"%SystemRoot%\System32\wscript.exe\" \"%VBS_PATH%\"" /f >nul 2>&1
+echo [SUCCESS] Auto-start registered in Windows Registry Run key.
 
 :: 3. Launch server in background right now if not already running
 echo.
@@ -30,7 +27,7 @@ echo [2/3] Checking background server status...
 netstat -ano | findstr ":3443" | findstr "LISTENING" >nul 2>&1
 if errorlevel 1 (
     echo [INFO] Server not running. Starting background server now...
-    start "" "%SystemRoot%\System32\wscript.exe" "%~dp0start-hidden.vbs"
+    start "" "%SystemRoot%\System32\wscript.exe" "%VBS_PATH%"
     ping -n 3 127.0.0.1 >nul
 ) else (
     echo [INFO] Background server is already running!
@@ -65,7 +62,7 @@ echo   MOBILE URL:  https://%MY_IP%:3443
 echo  --------------------------------------------------------------
 echo.
 echo  Open the URL above in Chrome or Safari on your phone.
-echo  You can also check server status anytime by running: check-status.bat
+echo  You can also check server status anytime by running: scripts\check-status.bat
 echo.
 echo ================================================================
 echo.

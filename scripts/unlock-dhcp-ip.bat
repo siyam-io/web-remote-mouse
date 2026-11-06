@@ -1,6 +1,6 @@
 @echo off
-title Lock PC Static IP (Prevent IP Change)
-cd /d "%~dp0"
+title Revert PC to Automatic DHCP IP
+cd /d "%~dp0.."
 
 :: Check for Administrator privileges
 net session >nul 2>&1
@@ -10,8 +10,6 @@ if %errorlevel% neq 0 (
     exit /b
 )
 
-:: Run clean PowerShell script
-powershell -NoProfile -ExecutionPolicy Bypass -File "%~dp0scripts\lock-static-ip.ps1"
-
+powershell -NoProfile -ExecutionPolicy Bypass -File "%~dp0unlock-dhcp-ip.ps1"
 echo.
 pause
