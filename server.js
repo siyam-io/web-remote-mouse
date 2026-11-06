@@ -1,3 +1,30 @@
+// Prevent EPIPE / broken pipe crashes when running in background/headless mode without a console
+if (process.stdout && process.stdout.on) {
+  process.stdout.on('error', (err) => {
+    if (err.code === 'EPIPE') return;
+  });
+}
+if (process.stderr && process.stderr.on) {
+  process.stderr.on('error', (err) => {
+    if (err.code === 'EPIPE') return;
+  });
+}
+
+// Global safety crash guards
+process.on('uncaughtException', (err) => {
+  try {
+    const fs = require('fs');
+    fs.appendFileSync('crash.log', `[${new Date().toISOString()}] Uncaught: ${err.stack || err}\n`);
+  } catch (_) {}
+});
+
+process.on('unhandledRejection', (reason) => {
+  try {
+    const fs = require('fs');
+    fs.appendFileSync('crash.log', `[${new Date().toISOString()}] Rejection: ${reason}\n`);
+  } catch (_) {}
+});
+
 const express = require('express');
 const http = require('http');
 const https = require('https');
@@ -12,6 +39,10 @@ const dgram = require('dgram');
 
 const udpAudioSocket = dgram.createSocket('udp4');
 const AUDIO_PORT = 50005;
+
+udpAudioSocket.on('error', (err) => {
+  console.warn('[UDP Audio Socket Warning]', err.message);
+});
 
 // AudioRelay: PC Loopback Audio Socket (captures PC speakers and streams to phone)
 const udpLoopbackSocket = dgram.createSocket('udp4');
@@ -261,6 +292,9 @@ app.use(express.static(path.join(__dirname, 'public')));
 
 // Create HTTP server
 const httpServer = http.createServer(app);
+httpServer.on('error', (err) => {
+  console.warn('[HTTP Server Error]', err.message);
+});
 
 function handleUpgrade(req, socket, head) {
   wss.handleUpgrade(req, socket, head, (ws) => {

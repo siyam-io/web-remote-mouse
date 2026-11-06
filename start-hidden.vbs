@@ -5,5 +5,14 @@ Set fso = CreateObject("Scripting.FileSystemObject")
 currentDir = fso.GetParentFolderName(WScript.ScriptFullName)
 WshShell.CurrentDirectory = currentDir
 
-' Launch node server.js with hidden window and append logs
-WshShell.Run "cmd.exe /c node server.js >> server.log 2>&1", 0, False
+nodeExe = "node.exe"
+If fso.FileExists("C:\Program Files\nodejs\node.exe") Then
+    nodeExe = "C:\Program Files\nodejs\node.exe"
+End If
+
+serverJs = currentDir & "\server.js"
+logFile = currentDir & "\server.log"
+
+' Launch via cmd with proper quote wrapping and log redirection
+cmdLine = "%comspec% /c """"" & nodeExe & """ """ & serverJs & """ >> """ & logFile & """ 2>&1"""
+WshShell.Run cmdLine, 0, False
