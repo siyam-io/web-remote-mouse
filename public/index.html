@@ -612,11 +612,16 @@
       <div class="gp-header">
         <div class="gp-header-left">
           <span class="gp-logo-icon">🎮</span>
-          <span class="gp-title">Gamepad</span>
+          <select id="gp-player-select" class="gp-preset-select gp-player-select" aria-label="Player Slot">
+            <option value="p1">👤 Player 1</option>
+            <option value="p2">👥 Player 2</option>
+            <option value="p3">🎮 Player 3</option>
+            <option value="p4">🎯 Player 4</option>
+          </select>
           <select id="gp-preset-select" class="gp-preset-select" aria-label="Gamepad Preset">
-            <option value="fps">FPS / Action (WASD + Jump/Sprint/Action)</option>
-            <option value="racing">Racing / Driving (Gas/Brake/Steer)</option>
-            <option value="retro">Retro / Arcade (D-Pad + ABXY)</option>
+            <option value="fps">FPS / Action (WASD)</option>
+            <option value="racing">Racing (WASD)</option>
+            <option value="retro">Retro Arcade (WASD)</option>
           </select>
         </div>
         <div class="gp-header-right">

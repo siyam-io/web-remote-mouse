@@ -1,58 +1,163 @@
 /**
- * gamepad.js - Virtual Gaming Controller (Gamepad Engine & Touch Multi-Key Dispatcher)
+ * gamepad.js - Virtual Gaming Controller (Multiplayer Player Slots & Presets Engine)
  */
 (function (window) {
   'use strict';
 
-  const PRESETS = {
-    fps: {
-      name: 'FPS / Action',
-      stick: { up: 'W', down: 'S', left: 'A', right: 'D' },
-      A: { type: 'key', code: 'Space', hint: 'Space (Jump)' },
-      B: { type: 'key', code: 'Shift', hint: 'Shift (Sprint)' },
-      X: { type: 'key', code: 'f', hint: 'F (Use)' },
-      Y: { type: 'key', code: 'e', hint: 'E (Action)' },
-      L1: { type: 'key', code: 'q', hint: 'Q (Skill)' },
-      R1: { type: 'key', code: 'r', hint: 'R (Reload)' },
-      L2: { type: 'mouse', button: 'right', hint: 'Aim (R-Click)' },
-      R2: { type: 'mouse', button: 'left', hint: 'Fire (L-Click)' },
-      Select: { type: 'key', code: 'Tab', hint: 'Tab (Score)' },
-      Start: { type: 'key', code: 'Escape', hint: 'Esc (Menu)' }
+  const PLAYER_PROFILES = {
+    p1: {
+      name: 'Player 1',
+      defaultPreset: 'fps',
+      presets: {
+        fps: {
+          name: '🎯 FPS / Action (WASD)',
+          stickLabel: 'MOVEMENT (WASD)',
+          stick: { up: 'W', down: 'S', left: 'A', right: 'D' },
+          A: { type: 'key', code: 'Space', hint: 'Space' },
+          B: { type: 'key', code: 'Shift', hint: 'Shift' },
+          X: { type: 'key', code: 'f', hint: 'F' },
+          Y: { type: 'key', code: 'e', hint: 'E' },
+          L1: { type: 'key', code: 'q', hint: 'Q' },
+          R1: { type: 'key', code: 'r', hint: 'R' },
+          L2: { type: 'mouse', button: 'right', hint: 'R-Click' },
+          R2: { type: 'mouse', button: 'left', hint: 'L-Click' },
+          Select: { type: 'key', code: 'Tab', hint: 'Tab' },
+          Start: { type: 'key', code: 'Escape', hint: 'Esc' }
+        },
+        racing: {
+          name: '🏎️ Racing / Driving',
+          stickLabel: 'STEER (A / D)',
+          stick: { up: 'W', down: 'S', left: 'A', right: 'D' },
+          A: { type: 'key', code: 'W', hint: 'W (Gas)' },
+          B: { type: 'key', code: 'S', hint: 'S (Brake)' },
+          X: { type: 'key', code: 'Space', hint: 'Space' },
+          Y: { type: 'key', code: 'Shift', hint: 'Nitro' },
+          L1: { type: 'key', code: 'b', hint: 'B' },
+          R1: { type: 'key', code: 'c', hint: 'C' },
+          L2: { type: 'key', code: 'S', hint: 'Brake' },
+          R2: { type: 'key', code: 'W', hint: 'Gas' },
+          Select: { type: 'key', code: 'm', hint: 'M (Map)' },
+          Start: { type: 'key', code: 'Escape', hint: 'Esc' }
+        },
+        retro: {
+          name: '🕹️ Retro Arcade (WASD)',
+          stickLabel: 'MOVEMENT (WASD)',
+          stick: { up: 'W', down: 'S', left: 'A', right: 'D' },
+          A: { type: 'key', code: 'z', hint: 'Z' },
+          B: { type: 'key', code: 'x', hint: 'X' },
+          X: { type: 'key', code: 'c', hint: 'C' },
+          Y: { type: 'key', code: 'v', hint: 'V' },
+          L1: { type: 'key', code: 'a', hint: 'A' },
+          R1: { type: 'key', code: 's', hint: 'S' },
+          L2: { type: 'key', code: 'd', hint: 'D' },
+          R2: { type: 'key', code: 'f', hint: 'F' },
+          Select: { type: 'key', code: 'Shift', hint: 'Shift' },
+          Start: { type: 'key', code: 'Enter', hint: 'Enter' }
+        }
+      }
     },
-    racing: {
-      name: 'Racing / Driving',
-      stick: { up: 'W', down: 'S', left: 'A', right: 'D' },
-      A: { type: 'key', code: 'W', hint: 'W (Gas)' },
-      B: { type: 'key', code: 'S', hint: 'S (Brake)' },
-      X: { type: 'key', code: 'Space', hint: 'Space (Handbrake)' },
-      Y: { type: 'key', code: 'Shift', hint: 'Shift (Nitro)' },
-      L1: { type: 'key', code: 'b', hint: 'B (Look Back)' },
-      R1: { type: 'key', code: 'c', hint: 'C (Camera)' },
-      L2: { type: 'key', code: 'S', hint: 'Brake / Rev' },
-      R2: { type: 'key', code: 'W', hint: 'Gas / Accelerate' },
-      Select: { type: 'key', code: 'm', hint: 'M (Map)' },
-      Start: { type: 'key', code: 'Escape', hint: 'Esc (Pause)' }
+    p2: {
+      name: 'Player 2',
+      defaultPreset: 'arcade_arrows',
+      presets: {
+        arcade_arrows: {
+          name: '🎯 Arrows + Nums',
+          stickLabel: 'MOVEMENT (ARROWS)',
+          stick: { up: 'Up', down: 'Down', left: 'Left', right: 'Right' },
+          A: { type: 'key', code: 'Enter', hint: 'Enter' },
+          B: { type: 'key', code: 'Shift', hint: 'Shift' },
+          X: { type: 'key', code: '1', hint: '1' },
+          Y: { type: 'key', code: '2', hint: '2' },
+          L1: { type: 'key', code: '4', hint: '4' },
+          R1: { type: 'key', code: '5', hint: '5' },
+          L2: { type: 'key', code: '7', hint: '7' },
+          R2: { type: 'key', code: '8', hint: '8' },
+          Select: { type: 'key', code: '9', hint: '9' },
+          Start: { type: 'key', code: '0', hint: '0' }
+        },
+        split_ijkl: {
+          name: '🕹️ IJKL Split-Screen',
+          stickLabel: 'MOVEMENT (IJKL)',
+          stick: { up: 'i', down: 'k', left: 'j', right: 'l' },
+          A: { type: 'key', code: 'n', hint: 'N' },
+          B: { type: 'key', code: 'm', hint: 'M' },
+          X: { type: 'key', code: 'u', hint: 'U' },
+          Y: { type: 'key', code: 'o', hint: 'O' },
+          L1: { type: 'key', code: 'y', hint: 'Y' },
+          R1: { type: 'key', code: 'p', hint: 'P' },
+          L2: { type: 'key', code: 'h', hint: 'H' },
+          R2: { type: 'key', code: 'Enter', hint: 'Enter' },
+          Select: { type: 'key', code: '8', hint: '8' },
+          Start: { type: 'key', code: '0', hint: '0' }
+        }
+      }
     },
-    retro: {
-      name: 'Retro / Arcade',
-      stick: { up: 'Up', down: 'Down', left: 'Left', right: 'Right' },
-      A: { type: 'key', code: 'z', hint: 'Z (Attack)' },
-      B: { type: 'key', code: 'x', hint: 'X (Jump)' },
-      X: { type: 'key', code: 'c', hint: 'C (Special)' },
-      Y: { type: 'key', code: 'v', hint: 'V (Extra)' },
-      L1: { type: 'key', code: 'a', hint: 'A' },
-      R1: { type: 'key', code: 's', hint: 'S' },
-      L2: { type: 'key', code: 'd', hint: 'D' },
-      R2: { type: 'key', code: 'f', hint: 'F' },
-      Select: { type: 'key', code: 'Shift', hint: 'Shift (Coin)' },
-      Start: { type: 'key', code: 'Enter', hint: 'Enter (Start)' }
+    p3: {
+      name: 'Player 3',
+      defaultPreset: 'tfgh',
+      presets: {
+        tfgh: {
+          name: '🎮 TFGH Split-Screen',
+          stickLabel: 'MOVEMENT (TFGH)',
+          stick: { up: 't', down: 'g', left: 'f', right: 'h' },
+          A: { type: 'key', code: 'v', hint: 'V' },
+          B: { type: 'key', code: 'b', hint: 'B' },
+          X: { type: 'key', code: 'r', hint: 'R' },
+          Y: { type: 'key', code: 'y', hint: 'Y' },
+          L1: { type: 'key', code: 'c', hint: 'C' },
+          R1: { type: 'key', code: 'n', hint: 'N' },
+          L2: { type: 'key', code: 'x', hint: 'X' },
+          R2: { type: 'key', code: 'z', hint: 'Z' },
+          Select: { type: 'key', code: '7', hint: '7' },
+          Start: { type: 'key', code: '8', hint: '8' }
+        }
+      }
+    },
+    p4: {
+      name: 'Player 4',
+      defaultPreset: 'nums',
+      presets: {
+        nums: {
+          name: '🎯 Numbers 8426',
+          stickLabel: 'MOVEMENT (8,4,2,6)',
+          stick: { up: '8', down: '2', left: '4', right: '6' },
+          A: { type: 'key', code: '5', hint: '5' },
+          B: { type: 'key', code: '0', hint: '0' },
+          X: { type: 'key', code: '1', hint: '1' },
+          Y: { type: 'key', code: '3', hint: '3' },
+          L1: { type: 'key', code: '7', hint: '7' },
+          R1: { type: 'key', code: '9', hint: '9' },
+          L2: { type: 'key', code: 'Enter', hint: 'Enter' },
+          R2: { type: 'key', code: 'Space', hint: 'Space' },
+          Select: { type: 'key', code: 'Tab', hint: 'Tab' },
+          Start: { type: 'key', code: 'Escape', hint: 'Esc' }
+        }
+      }
     }
   };
 
-  let currentPresetKey = 'fps';
+  let currentPlayerId = 'p1';
+  try {
+    const savedP = localStorage.getItem('gamepad_player');
+    if (savedP && PLAYER_PROFILES[savedP]) currentPlayerId = savedP;
+  } catch (_) {}
+
+  let currentPresetKey = (PLAYER_PROFILES[currentPlayerId] || PLAYER_PROFILES.p1).defaultPreset;
+  try {
+    const savedPr = localStorage.getItem('gamepad_preset');
+    if (savedPr && (PLAYER_PROFILES[currentPlayerId] || PLAYER_PROFILES.p1).presets[savedPr]) {
+      currentPresetKey = savedPr;
+    }
+  } catch (_) {}
+
   let activeStickMode = 'stick'; // 'stick' | 'dpad'
   const activeKeys = new Set();
   const activeMouseBtns = new Set();
+
+  function getCurrentPreset() {
+    const profile = PLAYER_PROFILES[currentPlayerId] || PLAYER_PROFILES.p1;
+    return profile.presets[currentPresetKey] || profile.presets[profile.defaultPreset];
+  }
 
   function triggerHaptic(ms = 12) {
     try {
@@ -87,7 +192,7 @@
       }
     } else if (action.type === 'mouse') {
       const btn = action.button || 'left';
-      if (activeMouseBtns.has(btn)) {
+      if (!activeMouseBtns.has(btn)) {
         activeMouseBtns.delete(btn);
         window.AppConnection.send({ type: 'mouseup', button: btn });
       }
@@ -106,9 +211,16 @@
     activeMouseBtns.clear();
   }
 
-  function updateButtonHints() {
-    const preset = PRESETS[currentPresetKey] || PRESETS.fps;
+  function updateUIForPreset() {
+    const preset = getCurrentPreset();
 
+    // Update Stick Label
+    const stickLabel = document.querySelector('.gp-stick-label');
+    if (stickLabel && preset.stickLabel) {
+      stickLabel.textContent = preset.stickLabel;
+    }
+
+    // Update Action Button Hints
     const btnMappings = [
       { id: 'gp-btn-a', act: preset.A },
       { id: 'gp-btn-b', act: preset.B },
@@ -130,9 +242,27 @@
     });
   }
 
+  function populatePresetDropdown() {
+    const presetSelect = document.getElementById('gp-preset-select');
+    if (!presetSelect) return;
+
+    const profile = PLAYER_PROFILES[currentPlayerId] || PLAYER_PROFILES.p1;
+    presetSelect.innerHTML = '';
+
+    Object.entries(profile.presets).forEach(([key, preset]) => {
+      const opt = document.createElement('option');
+      opt.value = key;
+      opt.textContent = preset.name;
+      presetSelect.appendChild(opt);
+    });
+
+    presetSelect.value = currentPresetKey;
+  }
+
   function initGamepad() {
     const panel = document.getElementById('gamepad-panel');
     const closeBtn = document.getElementById('gp-close-btn');
+    const playerSelect = document.getElementById('gp-player-select');
     const presetSelect = document.getElementById('gp-preset-select');
     const stickModeBtn = document.getElementById('gp-stick-mode-btn');
     const joystickWrap = document.getElementById('gp-joystick-wrap');
@@ -142,12 +272,36 @@
 
     if (!panel) return;
 
+    // Player slot selector
+    if (playerSelect) {
+      playerSelect.value = currentPlayerId;
+      playerSelect.addEventListener('change', (e) => {
+        const newPlayer = e.target.value;
+        if (PLAYER_PROFILES[newPlayer]) {
+          currentPlayerId = newPlayer;
+          try { localStorage.setItem('gamepad_player', newPlayer); } catch (_) {}
+
+          const profile = PLAYER_PROFILES[newPlayer];
+          if (!profile.presets[currentPresetKey]) {
+            currentPresetKey = profile.defaultPreset;
+            try { localStorage.setItem('gamepad_preset', currentPresetKey); } catch (_) {}
+          }
+
+          releaseAllInputs();
+          populatePresetDropdown();
+          updateUIForPreset();
+        }
+      });
+    }
+
     // Preset selector
     if (presetSelect) {
+      populatePresetDropdown();
       presetSelect.addEventListener('change', (e) => {
         currentPresetKey = e.target.value;
+        try { localStorage.setItem('gamepad_preset', currentPresetKey); } catch (_) {}
         releaseAllInputs();
-        updateButtonHints();
+        updateUIForPreset();
       });
     }
 
@@ -200,18 +354,18 @@
       btn.addEventListener('mouseleave', onUp);
     }
 
-    // Bind action buttons with preset awareness
+    // Bind action buttons with current player & preset awareness
     const actionKeyMap = {
-      'gp-btn-a': () => (PRESETS[currentPresetKey] || PRESETS.fps).A,
-      'gp-btn-b': () => (PRESETS[currentPresetKey] || PRESETS.fps).B,
-      'gp-btn-x': () => (PRESETS[currentPresetKey] || PRESETS.fps).X,
-      'gp-btn-y': () => (PRESETS[currentPresetKey] || PRESETS.fps).Y,
-      'gp-btn-l1': () => (PRESETS[currentPresetKey] || PRESETS.fps).L1,
-      'gp-btn-r1': () => (PRESETS[currentPresetKey] || PRESETS.fps).R1,
-      'gp-btn-l2': () => (PRESETS[currentPresetKey] || PRESETS.fps).L2,
-      'gp-btn-r2': () => (PRESETS[currentPresetKey] || PRESETS.fps).R2,
-      'gp-btn-select': () => (PRESETS[currentPresetKey] || PRESETS.fps).Select,
-      'gp-btn-start': () => (PRESETS[currentPresetKey] || PRESETS.fps).Start
+      'gp-btn-a': () => getCurrentPreset().A,
+      'gp-btn-b': () => getCurrentPreset().B,
+      'gp-btn-x': () => getCurrentPreset().X,
+      'gp-btn-y': () => getCurrentPreset().Y,
+      'gp-btn-l1': () => getCurrentPreset().L1,
+      'gp-btn-r1': () => getCurrentPreset().R1,
+      'gp-btn-l2': () => getCurrentPreset().L2,
+      'gp-btn-r2': () => getCurrentPreset().R2,
+      'gp-btn-select': () => getCurrentPreset().Select,
+      'gp-btn-start': () => getCurrentPreset().Start
     };
 
     Object.entries(actionKeyMap).forEach(([id, getAction]) => {
@@ -231,7 +385,7 @@
       const el = document.getElementById(id);
       if (el) {
         attachButtonListeners(el, () => {
-          const stick = (PRESETS[currentPresetKey] || PRESETS.fps).stick;
+          const stick = getCurrentPreset().stick;
           return { type: 'key', code: stick[dir] };
         });
       }
@@ -255,7 +409,7 @@
     const stickActiveDirections = { up: false, down: false, left: false, right: false };
 
     function syncStickDirections(newDirs) {
-      const stick = (PRESETS[currentPresetKey] || PRESETS.fps).stick;
+      const stick = getCurrentPreset().stick;
 
       ['up', 'down', 'left', 'right'].forEach((dir) => {
         const code = stick[dir];
@@ -365,7 +519,7 @@
       });
     }
 
-    updateButtonHints();
+    updateUIForPreset();
   }
 
   window.GamepadModule = {
