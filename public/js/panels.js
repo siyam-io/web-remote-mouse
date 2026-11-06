@@ -418,7 +418,10 @@
     function closeKeyboard() {
       if (keyboardPanel) keyboardPanel.classList.remove('open');
       if (keyboardToggleBtn) keyboardToggleBtn.classList.remove('active');
-      if (liveTypeInput) liveTypeInput.blur();
+      if (liveTypeInput) {
+        liveTypeInput.blur();
+        liveTypeInput.value = '';
+      }
     }
 
     if (settingsToggleBtn) {

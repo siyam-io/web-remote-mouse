@@ -423,82 +423,80 @@ namespace RemoteMouse {
         static extern IntPtr SendMessage(IntPtr hWnd, uint Msg, int wParam, StringBuilder lParam);
         const uint WM_GETTEXT = 0x000D;
 
-        [StructLayout(LayoutKind.Sequential)]
-        struct CURSORINFO {
-            public int cbSize;
-            public int flags;
-            public IntPtr hCursor;
-            public POINT ptScreenPos;
-        }
-
-        [DllImport("user32.dll")]
-        static extern bool GetCursorInfo(out CURSORINFO pci);
-
-        [DllImport("user32.dll")]
-        static extern IntPtr LoadCursor(IntPtr hInstance, int lpCursorName);
+        [DllImport("user32.dll", CharSet = CharSet.Auto, SetLastError = true)]
+        static extern int GetClassName(IntPtr hWnd, StringBuilder lpClassName, int nMaxCount);
 
         static void CheckFocusedTextFieldAsync() {
             ThreadPool.QueueUserWorkItem(_ => {
                 try {
-                    Thread.Sleep(80);
+                    // Small delay to allow the target app to process the click and set focus
+                    Thread.Sleep(120);
                     string text = null;
                     bool isEditable = false;
 
-                    // 1. Check Foreground Window Caret Info
-                    IntPtr fore = GetForegroundWindow();
-                    if (fore != IntPtr.Zero) {
-                        uint pid;
-                        uint tid = GetWindowThreadProcessId(fore, out pid);
-                        GUITHREADINFO gui = new GUITHREADINFO();
-                        gui.cbSize = Marshal.SizeOf(typeof(GUITHREADINFO));
-                        if (GetGUIThreadInfo(tid, ref gui)) {
-                            if (gui.hwndCaret != IntPtr.Zero || (gui.rcCaret.Bottom > gui.rcCaret.Top)) {
-                                isEditable = true;
-                            }
-                            if (gui.hwndFocus != IntPtr.Zero) {
-                                StringBuilder sb = new StringBuilder(2048);
-                                SendMessage(gui.hwndFocus, WM_GETTEXT, 2048, sb);
-                                if (sb.Length > 0) text = sb.ToString();
-                            }
-                        }
-                    }
-
-                    // 2. Check Mouse Cursor I-Beam Shape
-                    CURSORINFO ci = new CURSORINFO();
-                    ci.cbSize = Marshal.SizeOf(typeof(CURSORINFO));
-                    if (GetCursorInfo(out ci)) {
-                        IntPtr ibeam = LoadCursor(IntPtr.Zero, 32513); // IDC_IBEAM
-                        if (ci.hCursor == ibeam && ibeam != IntPtr.Zero) {
-                            isEditable = true;
-                        }
-                    }
-
-                    // 3. Check UI Automation Candidates (Under Cursor & Focused)
+                    // 1. Strict UI Automation Check: Only actual Input fields / Textareas / Search bars
                     POINT pt;
                     GetCursorPos(out pt);
                     AutomationElement[] candidates = new AutomationElement[2];
-                    try { candidates[0] = AutomationElement.FromPoint(new Point(pt.x, pt.y)); } catch {}
-                    try { candidates[1] = AutomationElement.FocusedElement; } catch {}
+                    try { candidates[0] = AutomationElement.FocusedElement; } catch {}
+                    try { candidates[1] = AutomationElement.FromPoint(new Point(pt.x, pt.y)); } catch {}
 
                     foreach (var el in candidates) {
                         if (el == null) continue;
                         try {
                             ControlType ct = el.Current.ControlType;
-                            if (ct == ControlType.Edit || ct == ControlType.Document) isEditable = true;
+                            // Only match actual input fields: ControlType.Edit or editable ComboBox (search bars)
+                            // Strictly ignore Document, Text (paragraphs/labels), Pane, Group, etc.
+                            if (ct == ControlType.Edit || ct == ControlType.ComboBox) {
+                                if (el.Current.IsEnabled) {
+                                    bool isReadOnly = false;
+                                    object pat;
+                                    if (el.TryGetCurrentPattern(ValuePattern.Pattern, out pat)) {
+                                        var vp = (ValuePattern)pat;
+                                        isReadOnly = vp.Current.IsReadOnly;
+                                        if (!isReadOnly && string.IsNullOrEmpty(text)) {
+                                            text = vp.Current.Value;
+                                        }
+                                    }
 
-                            object pat;
-                            if (el.TryGetCurrentPattern(ValuePattern.Pattern, out pat)) {
-                                var vp = (ValuePattern)pat;
-                                if (!vp.Current.IsReadOnly) {
-                                    isEditable = true;
-                                    if (string.IsNullOrEmpty(text)) text = vp.Current.Value;
+                                    if (!isReadOnly) {
+                                        isEditable = true;
+                                        if (string.IsNullOrEmpty(text) && el.TryGetCurrentPattern(TextPattern.Pattern, out pat)) {
+                                            var tp = (TextPattern)pat;
+                                            text = tp.DocumentRange.GetText(2000);
+                                        }
+                                        break; // Found true editable input field!
+                                    }
                                 }
                             }
-                            if (isEditable && string.IsNullOrEmpty(text) && el.TryGetCurrentPattern(TextPattern.Pattern, out pat)) {
-                                var tp = (TextPattern)pat;
-                                text = tp.DocumentRange.GetText(2000);
-                            }
                         } catch {}
+                    }
+
+                    // 2. Win32 Caret Fallback: Only if active blinking text caret is inside an Edit control
+                    if (!isEditable) {
+                        IntPtr fore = GetForegroundWindow();
+                        if (fore != IntPtr.Zero) {
+                            uint pid;
+                            uint tid = GetWindowThreadProcessId(fore, out pid);
+                            GUITHREADINFO gui = new GUITHREADINFO();
+                            gui.cbSize = Marshal.SizeOf(typeof(GUITHREADINFO));
+                            if (GetGUIThreadInfo(tid, ref gui)) {
+                                if (gui.hwndCaret != IntPtr.Zero && (gui.rcCaret.Bottom > gui.rcCaret.Top)) {
+                                    IntPtr targetHwnd = gui.hwndFocus != IntPtr.Zero ? gui.hwndFocus : gui.hwndCaret;
+                                    StringBuilder className = new StringBuilder(256);
+                                    GetClassName(targetHwnd, className, 256);
+                                    string cls = className.ToString().ToLower();
+                                    if (cls.Contains("edit") || cls.Contains("search") || cls.Contains("input")) {
+                                        isEditable = true;
+                                        if (gui.hwndFocus != IntPtr.Zero) {
+                                            StringBuilder sb = new StringBuilder(2048);
+                                            SendMessage(gui.hwndFocus, WM_GETTEXT, 2048, sb);
+                                            if (sb.Length > 0) text = sb.ToString();
+                                        }
+                                    }
+                                }
+                            }
+                        }
                     }
 
                     if (isEditable) {

@@ -45,6 +45,11 @@
       prevLiveVal = liveTypeInput.value;
     });
 
+    function resetState() {
+      if (liveTypeInput) liveTypeInput.value = '';
+      prevLiveVal = '';
+    }
+
     // Special Keys on Live Input (Tab, Esc, Enter)
     liveTypeInput.addEventListener('keydown', (e) => {
       if (e.key === 'Tab') {
@@ -53,6 +58,13 @@
       } else if (e.key === 'Escape') {
         e.preventDefault();
         window.AppConnection.send({ type: 'keyboard_key', key: 'Escape' });
+      } else if (e.key === 'Enter') {
+        // Send / Submit on Enter (without Shift): sends Enter to PC and clears state
+        if (!e.shiftKey) {
+          e.preventDefault();
+          window.AppConnection.send({ type: 'keyboard_key', key: 'Enter' });
+          resetState();
+        }
       }
     });
 
@@ -70,7 +82,7 @@
 
       if (e.inputType === 'insertLineBreak') {
         window.AppConnection.send({ type: 'keyboard_key', key: 'Enter' });
-        prevLiveVal = currentVal;
+        resetState();
         return;
       }
 
@@ -111,16 +123,12 @@
       prevLiveVal = currentVal;
     });
 
-    // Clear Text Button
+    // Clear Text Button (Clears local typing box)
     if (btnClearText) {
       btnClearText.addEventListener('click', (e) => {
         e.preventDefault();
-        const len = liveTypeInput.value.length;
-        liveTypeInput.value = '';
-        prevLiveVal = '';
-        for (let i = 0; i < Math.min(len, 250); i++) {
-          window.AppConnection.send({ type: 'keyboard_key', key: 'Backspace' });
-        }
+        e.stopPropagation();
+        resetState();
         liveTypeInput.focus();
       });
     }
@@ -145,8 +153,8 @@
           liveTypeInput.value += ' ';
           prevLiveVal = liveTypeInput.value;
         } else if (key === 'Enter') {
-          liveTypeInput.value += '\n';
-          prevLiveVal = liveTypeInput.value;
+          // Send / Submit on Enter button: clear previous state
+          resetState();
         }
 
         setTimeout(() => {
@@ -159,5 +167,7 @@
     });
   }
 
-  window.KeyboardModule = { init: initKeyboard };
+  window.KeyboardModule = { 
+    init: initKeyboard 
+  };
 })(window);
