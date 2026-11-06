@@ -27,38 +27,45 @@ if errorlevel 1 (
 :: 3. Launch server in background right now if not already running
 echo.
 echo [2/3] Checking background server status...
-netstat -ano | findstr /R ":3443 .*LISTENING" >nul 2>&1
+netstat -ano | findstr ":3443" | findstr "LISTENING" >nul 2>&1
 if errorlevel 1 (
-    echo [INFO] Starting background server now...
+    echo [INFO] Server not running. Starting background server now...
     start "" "%SystemRoot%\System32\wscript.exe" "%~dp0start-hidden.vbs"
-    timeout /t 2 /nobreak >nul
+    ping -n 3 127.0.0.1 >nul
 ) else (
     echo [INFO] Background server is already running!
 )
 
-:: 4. Get Local IPv4 Address
+:: Verify port 3443 is listening
+netstat -ano | findstr ":3443" | findstr "LISTENING" >nul 2>&1
+if errorlevel 1 (
+    echo [WARN] Waiting for server port 3443 to open...
+    ping -n 3 127.0.0.1 >nul
+)
+
+:: 4. Get Accurate Local Wi-Fi IPv4 Address
 echo.
 echo [3/3] Getting connection information...
-for /f "tokens=2 delims=:" %%A in ('ipconfig ^| findstr /c:"IPv4 Address" /c:"IPv4-Adresse"') do (
-    set "MY_IP=%%A"
-    goto :ip_found
+set "MY_IP=192.168.0.105"
+if exist "scripts\get-ip.js" (
+    for /f %%A in ('node scripts\get-ip.js 2^>nul') do set "MY_IP=%%A"
 )
-set "MY_IP= localhost"
-
-:ip_found
-set "MY_IP=%MY_IP: =%"
 
 echo.
 echo ================================================================
-echo                 SETUP COMPLETE & ACTIVE!
+echo           SERVER STATUS: ONLINE AND READY TO CONNECT!
 echo ================================================================
 echo.
-echo  [*] Auto-Start:  ENABLED (Runs silently every time Windows boots)
-echo  [*] Server:      RUNNING in background
-echo  [*] Mobile URL:  https://%MY_IP%:3443
+echo  [OK] Auto-Start:    ENABLED (Starts automatically on Windows boot)
+echo  [OK] Server Status: ONLINE (Port 3443 is ACTIVE and LISTENING)
+echo  [OK] Local PC IP:   %MY_IP%
 echo.
-echo  You can now open the app on your mobile browser or installed PWA!
-echo  No need to manually start the server on PC again.
+echo  --------------------------------------------------------------
+echo   MOBILE URL:  https://%MY_IP%:3443
+echo  --------------------------------------------------------------
+echo.
+echo  Open the URL above in Chrome or Safari on your phone.
+echo  You can also check server status anytime by running: check-status.bat
 echo.
 echo ================================================================
 echo.

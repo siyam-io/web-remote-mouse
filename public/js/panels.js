@@ -422,6 +422,9 @@
         liveTypeInput.blur();
         liveTypeInput.value = '';
       }
+      if (window.KeyboardModule && typeof window.KeyboardModule.resetState === 'function') {
+        window.KeyboardModule.resetState();
+      }
     }
 
     if (settingsToggleBtn) {

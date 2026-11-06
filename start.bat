@@ -29,11 +29,19 @@ if not exist "bin\controller.exe" (
     if exist "%SystemRoot%\Microsoft.NET\Framework64\v4.0.30319\csc.exe" (
         "%SystemRoot%\Microsoft.NET\Framework64\v4.0.30319\csc.exe" /nologo /optimize /r:"%SystemRoot%\Microsoft.NET\Framework64\v4.0.30319\WPF\UIAutomationClient.dll" /r:"%SystemRoot%\Microsoft.NET\Framework64\v4.0.30319\WPF\UIAutomationTypes.dll" /r:"%SystemRoot%\Microsoft.NET\Framework64\v4.0.30319\WPF\WindowsBase.dll" /out:bin\controller.exe bin\controller.cs
     ) else if exist "%SystemRoot%\Microsoft.NET\Framework\v4.0.30319\csc.exe" (
-        "%SystemRoot%\Microsoft.NET\Framework\v4.0.30319\csc.exe" /nologo /optimize /r:"%SystemRoot%\Microsoft.NET\Framework\v4.0.30319\WPF\UIAutomationClient.dll" /r:"%SystemRoot%\Microsoft.NET\Framework\v4.0.30319\WPF\UIAutomationTypes.dll" /r:"%SystemRoot%\Microsoft.NET\Framework\v4.0.30319\WPF\WindowsBase.dll" /out:bin\controller.exe bin\controller.cs
+        "%SystemRoot%\Microsoft.NET\Framework\v4.0.30319\csc.exe" /nologo /optimize /r:"%SystemRoot%\Microsoft.NET\Framework64\v4.0.30319\WPF\UIAutomationClient.dll" /r:"%SystemRoot%\Microsoft.NET\Framework64\v4.0.30319\WPF\UIAutomationTypes.dll" /r:"%SystemRoot%\Microsoft.NET\Framework64\v4.0.30319\WPF\WindowsBase.dll" /out:bin\controller.exe bin\controller.cs
     )
 )
 
-echo [INFO] Launching Remote Mouse Server...
+:: Clear any stale process listening on port 3443
+for /f "tokens=5" %%P in ('netstat -ano ^| findstr ":3443" ^| findstr "LISTENING"') do (
+    echo [INFO] Closing old background instance (PID: %%P)...
+    taskkill /F /PID %%P >nul 2>&1
+    ping -n 2 127.0.0.1 >nul
+)
+taskkill /F /IM controller.exe >nul 2>&1
+
+echo [INFO] Launching Remote Mouse Server (Visible Mode)...
 echo.
 node server.js
 if errorlevel 1 (

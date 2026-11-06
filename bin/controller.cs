@@ -672,7 +672,6 @@ namespace RemoteMouse {
                                 MouseClick(MOUSEEVENTF_MIDDLEDOWN, MOUSEEVENTF_MIDDLEUP);
                             } else {
                                 MouseClick(MOUSEEVENTF_LEFTDOWN, MOUSEEVENTF_LEFTUP);
-                                CheckFocusedTextFieldAsync();
                             }
                             break;
                         }

@@ -76,25 +76,7 @@ function startController() {
 
     for (const rawLine of lines) {
       const line = rawLine.trim();
-      if (line.startsWith('TEXTFOCUS ')) {
-        const b64 = line.substring(10).trim();
-        let text = '';
-        if (b64.length > 0) {
-          try {
-            text = Buffer.from(b64, 'base64').toString('utf8');
-          } catch (_) {}
-        }
-
-        console.log(`[Auto-Keyboard] Text field focused on PC (${text.length} chars). Opening phone keyboard...`);
-        // Broadcast to mobile client so virtual keyboard opens automatically with text
-        for (const client of wss.clients) {
-          if (client.readyState === 1 && !client.isCameraViewer) {
-            try {
-              client.send(JSON.stringify({ type: 'auto_keyboard_open', text: text }));
-            } catch (_) {}
-          }
-        }
-      }
+      // Auto-keyboard pop-up on click disabled to prevent unsolicited keyboard pop-ups on mobile
     }
   });
 

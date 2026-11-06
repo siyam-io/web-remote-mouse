@@ -13,25 +13,6 @@
     let prevLiveVal = '';
     let isComposing = false;
 
-    // Listen for Auto Keyboard Open event from PC (triggered when mouse clicks a textarea/input)
-    window.AppConnection.onMessage((data) => {
-      if (data && data.type === 'auto_keyboard_open') {
-        const text = typeof data.text === 'string' ? data.text : '';
-        if (window.PanelsModule && typeof window.PanelsModule.openKeyboard === 'function') {
-          window.PanelsModule.openKeyboard();
-        }
-        liveTypeInput.value = text;
-        prevLiveVal = text;
-
-        setTimeout(() => {
-          try {
-            liveTypeInput.focus();
-            liveTypeInput.setSelectionRange(text.length, text.length);
-          } catch (_) {}
-        }, 100);
-      }
-    });
-
     // Mobile Virtual Keyboard IME Composition Support
     liveTypeInput.addEventListener('compositionstart', () => {
       isComposing = true;
@@ -49,6 +30,10 @@
       if (liveTypeInput) liveTypeInput.value = '';
       prevLiveVal = '';
     }
+
+    // Expose resetState on module so panels.js can clear previous state when closing/opening
+    window.KeyboardModule = window.KeyboardModule || {};
+    window.KeyboardModule.resetState = resetState;
 
     // Special Keys on Live Input (Tab, Esc, Enter)
     liveTypeInput.addEventListener('keydown', (e) => {
