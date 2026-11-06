@@ -13,3 +13,4 @@ if %errorlevel% neq 0 (
 powershell -NoProfile -ExecutionPolicy Bypass -File "%~dp0unlock-dhcp-ip.ps1"
 echo.
 pause
+

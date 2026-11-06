@@ -13,3 +13,4 @@ if %errorlevel% neq 0 (
 powershell -NoProfile -ExecutionPolicy Bypass -File "%~dp0lock-static-ip.ps1"
 echo.
 pause
+

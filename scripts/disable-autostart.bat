@@ -24,3 +24,4 @@ echo  [SUCCESS] Auto-start disabled and background processes stopped!
 echo ================================================================
 echo.
 pause
+

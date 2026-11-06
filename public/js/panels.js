@@ -27,6 +27,11 @@
     const liveTypeInput = document.getElementById('live-type-input');
     const batchTextInput = document.getElementById('batch-text-input');
 
+    // 2.5 Gaming Controller (Gamepad) Elements
+    const gamepadToggleBtn = document.getElementById('gamepad-toggle-btn');
+    const gamepadPanel = document.getElementById('gamepad-panel');
+    const menuGamepadBtn = document.getElementById('menu-gamepad-btn');
+
     // 3. Fullscreen Button
     const fullscreenBtn = document.getElementById('fullscreen-btn');
 
@@ -127,6 +132,14 @@
         micToggleBtn.click();
         closeMenu();
         setTimeout(updateMenuStatus, 150);
+      });
+    }
+
+    if (menuGamepadBtn) {
+      menuGamepadBtn.addEventListener('click', (e) => {
+        e.stopPropagation();
+        closeMenu();
+        setTimeout(openGamepad, 100);
       });
     }
 
@@ -398,6 +411,7 @@
 
     function openSettings() {
       closeKeyboard();
+      closeGamepad();
       if (settingsPanel) settingsPanel.classList.add('open');
       if (settingsToggleBtn) settingsToggleBtn.classList.add('active');
     }
@@ -409,6 +423,7 @@
 
     function openKeyboard() {
       closeSettings();
+      closeGamepad();
       closeMenu();
       if (keyboardPanel) keyboardPanel.classList.add('open');
       if (keyboardToggleBtn) keyboardToggleBtn.classList.add('active');
@@ -424,6 +439,22 @@
       }
       if (window.KeyboardModule && typeof window.KeyboardModule.resetState === 'function') {
         window.KeyboardModule.resetState();
+      }
+    }
+
+    function openGamepad() {
+      closeSettings();
+      closeKeyboard();
+      closeMenu();
+      if (gamepadPanel) gamepadPanel.classList.add('open');
+      if (gamepadToggleBtn) gamepadToggleBtn.classList.add('active');
+    }
+
+    function closeGamepad() {
+      if (gamepadPanel) gamepadPanel.classList.remove('open');
+      if (gamepadToggleBtn) gamepadToggleBtn.classList.remove('active');
+      if (window.GamepadModule && typeof window.GamepadModule.releaseAll === 'function') {
+        window.GamepadModule.releaseAll();
       }
     }
 
@@ -456,6 +487,17 @@
       });
     }
 
+    if (gamepadToggleBtn) {
+      gamepadToggleBtn.addEventListener('click', (e) => {
+        e.stopPropagation();
+        if (gamepadPanel && gamepadPanel.classList.contains('open')) {
+          closeGamepad();
+        } else {
+          openGamepad();
+        }
+      });
+    }
+
     if (kbCloseBtn) {
       kbCloseBtn.addEventListener('click', (e) => {
         e.stopPropagation();
@@ -479,6 +521,8 @@
       init: initPanels,
       openKeyboard,
       closeKeyboard,
+      openGamepad,
+      closeGamepad,
       openSettings,
       closeSettings,
       openMenu,

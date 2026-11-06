@@ -330,6 +330,8 @@ namespace RemoteMouse {
         const byte VK_TAB = 0x09;
         const byte VK_RETURN = 0x0D;
         const byte VK_SHIFT = 0x10;
+        const byte VK_CONTROL = 0x11;
+        const byte VK_MENU = 0x12; // Alt key
         const byte VK_ESCAPE = 0x1B;
         const byte VK_SPACE = 0x20;
         const byte VK_PRIOR = 0x21; // Page Up
@@ -634,6 +636,75 @@ namespace RemoteMouse {
             keybd_event(vk, (byte)scan, flags | KEYEVENTF_KEYUP, UIntPtr.Zero);
         }
 
+        static void SetKeyState(byte vk, bool isDown, bool extended = false) {
+            uint scan = MapVirtualKey(vk, 0);
+            uint flags = (extended ? KEYEVENTF_EXTENDEDKEY : 0) | (isDown ? 0 : KEYEVENTF_KEYUP);
+            keybd_event(vk, (byte)scan, flags, UIntPtr.Zero);
+        }
+
+        static void MouseButtonEvent(uint flag) {
+            INPUT[] inputs = new INPUT[1];
+            inputs[0].type = 0; // INPUT_MOUSE
+            inputs[0].u.mi.dwFlags = flag;
+            uint r = SendInput(1, inputs, Marshal.SizeOf(typeof(INPUT)));
+            if (r == 0) {
+                mouse_event(flag, 0, 0, 0, UIntPtr.Zero);
+            }
+        }
+
+        static bool ResolveKey(string keyName, out byte vk, out bool extended) {
+            vk = 0;
+            extended = false;
+            if (string.IsNullOrEmpty(keyName)) return false;
+
+            string k = keyName.Trim().ToLower();
+
+            // Single letters a-z
+            if (k.Length == 1 && k[0] >= 'a' && k[0] <= 'z') {
+                vk = (byte)('A' + (k[0] - 'a'));
+                return true;
+            }
+            // Digits 0-9
+            if (k.Length == 1 && k[0] >= '0' && k[0] <= '9') {
+                vk = (byte)('0' + (k[0] - '0'));
+                return true;
+            }
+
+            switch (k) {
+                case "space": vk = VK_SPACE; return true;
+                case "shift": case "lshift": vk = VK_SHIFT; return true;
+                case "ctrl": case "lctrl": case "control": vk = VK_CONTROL; return true;
+                case "alt": case "lalt": vk = VK_MENU; return true;
+                case "tab": vk = VK_TAB; return true;
+                case "esc": case "escape": vk = VK_ESCAPE; return true;
+                case "enter": case "return": vk = VK_RETURN; return true;
+                case "back": case "backspace": vk = VK_BACK; return true;
+                case "up": case "arrowup": vk = VK_UP; extended = true; return true;
+                case "down": case "arrowdown": vk = VK_DOWN; extended = true; return true;
+                case "left": case "arrowleft": vk = VK_LEFT; extended = true; return true;
+                case "right": case "arrowright": vk = VK_RIGHT; extended = true; return true;
+                case "pageup": case "pgup": vk = VK_PRIOR; extended = true; return true;
+                case "pagedown": case "pgdn": vk = VK_NEXT; extended = true; return true;
+                case "home": vk = VK_HOME; extended = true; return true;
+                case "end": vk = VK_END; extended = true; return true;
+                case "del": case "delete": vk = 0x2E; extended = true; return true;
+                case "insert": vk = 0x2D; extended = true; return true;
+                case "f1": vk = 0x70; return true;
+                case "f2": vk = 0x71; return true;
+                case "f3": vk = 0x72; return true;
+                case "f4": vk = 0x73; return true;
+                case "f5": vk = 0x74; return true;
+                case "f6": vk = 0x75; return true;
+                case "f7": vk = 0x76; return true;
+                case "f8": vk = 0x77; return true;
+                case "f9": vk = 0x78; return true;
+                case "f10": vk = 0x79; return true;
+                case "f11": vk = 0x7A; return true;
+                case "f12": vk = 0x7B; return true;
+            }
+            return false;
+        }
+
         static void Main(string[] args) {
             Console.InputEncoding = Encoding.UTF8;
             Console.OutputEncoding = Encoding.UTF8;
@@ -675,6 +746,36 @@ namespace RemoteMouse {
                             }
                             break;
                         }
+                        case "mousedown": {
+                            string btn = rest.ToLower();
+                            if (btn == "right") MouseButtonEvent(MOUSEEVENTF_RIGHTDOWN);
+                            else if (btn == "middle") MouseButtonEvent(MOUSEEVENTF_MIDDLEDOWN);
+                            else MouseButtonEvent(MOUSEEVENTF_LEFTDOWN);
+                            break;
+                        }
+                        case "mouseup": {
+                            string btn = rest.ToLower();
+                            if (btn == "right") MouseButtonEvent(MOUSEEVENTF_RIGHTUP);
+                            else if (btn == "middle") MouseButtonEvent(MOUSEEVENTF_MIDDLEUP);
+                            else MouseButtonEvent(MOUSEEVENTF_LEFTUP);
+                            break;
+                        }
+                        case "keydown": {
+                            byte vk;
+                            bool ext;
+                            if (ResolveKey(rest, out vk, out ext)) {
+                                SetKeyState(vk, true, ext);
+                            }
+                            break;
+                        }
+                        case "keyup": {
+                            byte vk;
+                            bool ext;
+                            if (ResolveKey(rest, out vk, out ext)) {
+                                SetKeyState(vk, false, ext);
+                            }
+                            break;
+                        }
                         case "checkfocus": {
                             CheckFocusedTextFieldAsync();
                             break;
@@ -698,21 +799,11 @@ namespace RemoteMouse {
                             break;
                         }
                         case "key": {
-                            string keyName = rest;
-                            if (keyName.Equals("Enter", StringComparison.OrdinalIgnoreCase) || keyName.Equals("Return", StringComparison.OrdinalIgnoreCase)) TapKey(VK_RETURN);
-                            else if (keyName.Equals("Backspace", StringComparison.OrdinalIgnoreCase) || keyName.Equals("Back", StringComparison.OrdinalIgnoreCase)) TapKey(VK_BACK);
-                            else if (keyName.Equals("Tab", StringComparison.OrdinalIgnoreCase)) TapKey(VK_TAB);
-                            else if (keyName.Equals("Escape", StringComparison.OrdinalIgnoreCase) || keyName.Equals("Esc", StringComparison.OrdinalIgnoreCase)) TapKey(VK_ESCAPE);
-                            else if (keyName.Equals("Space", StringComparison.OrdinalIgnoreCase) || keyName.Equals(" ", StringComparison.OrdinalIgnoreCase)) TapKey(VK_SPACE);
-                            else if (keyName.Equals("ArrowUp", StringComparison.OrdinalIgnoreCase) || keyName.Equals("Up", StringComparison.OrdinalIgnoreCase)) TapKey(VK_UP, true);
-                            else if (keyName.Equals("ArrowDown", StringComparison.OrdinalIgnoreCase) || keyName.Equals("Down", StringComparison.OrdinalIgnoreCase)) TapKey(VK_DOWN, true);
-                            else if (keyName.Equals("ArrowLeft", StringComparison.OrdinalIgnoreCase) || keyName.Equals("Left", StringComparison.OrdinalIgnoreCase)) TapKey(VK_LEFT, true);
-                            else if (keyName.Equals("ArrowRight", StringComparison.OrdinalIgnoreCase) || keyName.Equals("Right", StringComparison.OrdinalIgnoreCase)) TapKey(VK_RIGHT, true);
-                            else if (keyName.Equals("PageUp", StringComparison.OrdinalIgnoreCase) || keyName.Equals("PgUp", StringComparison.OrdinalIgnoreCase)) TapKey(VK_PRIOR, true);
-                            else if (keyName.Equals("PageDown", StringComparison.OrdinalIgnoreCase) || keyName.Equals("PgDn", StringComparison.OrdinalIgnoreCase)) TapKey(VK_NEXT, true);
-                            else if (keyName.Equals("Home", StringComparison.OrdinalIgnoreCase)) TapKey(VK_HOME, true);
-                            else if (keyName.Equals("End", StringComparison.OrdinalIgnoreCase)) TapKey(VK_END, true);
-                            else if (keyName.Equals("WinH", StringComparison.OrdinalIgnoreCase) || keyName.Equals("Dictate", StringComparison.OrdinalIgnoreCase)) {
+                            byte vk;
+                            bool ext;
+                            if (ResolveKey(rest, out vk, out ext)) {
+                                TapKey(vk, ext);
+                            } else if (rest.Equals("WinH", StringComparison.OrdinalIgnoreCase) || rest.Equals("Dictate", StringComparison.OrdinalIgnoreCase)) {
                                 // Windows Voice Typing hotkey: Win + H
                                 keybd_event(0x5B, 0, 0, UIntPtr.Zero);
                                 TapKey(0x48); // 'H' key

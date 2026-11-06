@@ -412,6 +412,32 @@ wss.on('connection', (ws, req) => {
           break;
         }
 
+        case 'keydown': {
+          if (typeof data.key === 'string' && data.key.length > 0) {
+            sendNativeCommand(`keydown ${data.key}`);
+          }
+          break;
+        }
+
+        case 'keyup': {
+          if (typeof data.key === 'string' && data.key.length > 0) {
+            sendNativeCommand(`keyup ${data.key}`);
+          }
+          break;
+        }
+
+        case 'mousedown': {
+          const button = (data.button || 'left').toLowerCase();
+          sendNativeCommand(`mousedown ${button}`);
+          break;
+        }
+
+        case 'mouseup': {
+          const button = (data.button || 'left').toLowerCase();
+          sendNativeCommand(`mouseup ${button}`);
+          break;
+        }
+
         case 'volume': {
           const action = (data.action || '').toLowerCase();
           sendNativeCommand(`vol ${action}`);

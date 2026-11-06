@@ -7,7 +7,7 @@
   document.addEventListener('DOMContentLoaded', () => {
     // 1. Global Touch Prevention to avoid unwanted browser gestures/bounces
     window.addEventListener('touchmove', (e) => {
-      if (e.target.closest('#keyboard-panel input, #settings-panel input, #settings-panel label, .range-slider')) {
+      if (e.target.closest('#keyboard-panel input, #settings-panel input, #settings-panel label, .range-slider, #gamepad-panel')) {
         return;
       }
       e.preventDefault();
@@ -19,7 +19,7 @@
 
     window.addEventListener('gesturestart', (e) => e.preventDefault());
     window.addEventListener('contextmenu', (e) => {
-      if (!e.target.closest('#keyboard-panel input, #settings-panel input')) {
+      if (!e.target.closest('#keyboard-panel input, #settings-panel input, #gamepad-panel')) {
         e.preventDefault();
       }
     });
@@ -39,6 +39,7 @@
     if (window.CamModule) window.CamModule.init();
     if (window.AudioRelayModule) window.AudioRelayModule.init();
     window.KeyboardModule.init();
+    if (window.GamepadModule) window.GamepadModule.init();
     window.PanelsModule.init();
 
     // 3. Register Offline-First PWA Service Worker for instant load & auto-discovery

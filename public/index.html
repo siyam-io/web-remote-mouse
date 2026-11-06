@@ -21,6 +21,7 @@
   <link rel="stylesheet" href="css/controls.css">
   <link rel="stylesheet" href="css/panels.css">
   <link rel="stylesheet" href="css/cam.css">
+  <link rel="stylesheet" href="css/gamepad.css">
 </head>
 <body>
   <div id="app">
@@ -111,6 +112,17 @@
               <line x1="14" y1="12" x2="14.01" y2="12"></line>
               <line x1="18" y1="12" x2="18.01" y2="12"></line>
               <line x1="7" y1="16" x2="17" y2="16"></line>
+            </svg>
+          </button>
+
+          <!-- Game Controller / Gamepad Toggle Button (🎮) -->
+          <button id="gamepad-toggle-btn" class="icon-btn" aria-label="Game Controller" title="Gaming Controller (Gamepad)">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <line x1="6" y1="12" x2="10" y2="12"></line>
+              <line x1="8" y1="10" x2="8" y2="14"></line>
+              <line x1="15" y1="13" x2="15.01" y2="13"></line>
+              <line x1="18" y1="11" x2="18.01" y2="11"></line>
+              <rect x="2" y="6" width="20" height="12" rx="4"></rect>
             </svg>
           </button>
 
@@ -445,7 +457,19 @@
       </div>
 
       <div class="menu-items-list">
-        <!-- 1. AudioRelay -->
+        <!-- 1. Gaming Controller (Gamepad) -->
+        <div class="menu-card" id="card-gamepad">
+          <div class="menu-card-left">
+            <div class="menu-card-icon icon-gamepad">🎮</div>
+            <div class="menu-card-info">
+              <div class="menu-card-title">Game Controller (Gamepad)</div>
+              <div class="menu-card-desc">Thumbstick, D-Pad, ABXY, Triggers & Presets</div>
+            </div>
+          </div>
+          <button id="menu-gamepad-btn" class="menu-action-btn" type="button">Play</button>
+        </div>
+
+        <!-- 2. AudioRelay -->
         <div class="menu-card" id="card-audiorelay">
           <div class="menu-card-left">
             <div class="menu-card-icon icon-audio">🎧</div>
@@ -582,6 +606,106 @@
       </div>
     </div>
 
+    <!-- Gaming Controller (Gamepad) Overlay Modal / Panel -->
+    <div id="gamepad-panel" class="gamepad-panel" aria-label="Gaming Controller">
+      <!-- Gamepad Top Header -->
+      <div class="gp-header">
+        <div class="gp-header-left">
+          <span class="gp-logo-icon">🎮</span>
+          <span class="gp-title">Gamepad</span>
+          <select id="gp-preset-select" class="gp-preset-select" aria-label="Gamepad Preset">
+            <option value="fps">FPS / Action (WASD + Jump/Sprint/Action)</option>
+            <option value="racing">Racing / Driving (Gas/Brake/Steer)</option>
+            <option value="retro">Retro / Arcade (D-Pad + ABXY)</option>
+          </select>
+        </div>
+        <div class="gp-header-right">
+          <button id="gp-stick-mode-btn" class="gp-icon-btn" type="button" title="Toggle Joystick / D-Pad">🎛️</button>
+          <button id="gp-close-btn" class="gp-icon-btn gp-close-btn" type="button" aria-label="Close Gamepad">✕</button>
+        </div>
+      </div>
+
+      <!-- Top Shoulder Bumpers & Triggers -->
+      <div class="gp-shoulders-row">
+        <div class="gp-shoulder-group gp-shoulder-left">
+          <button class="gp-btn gp-shoulder-btn" data-type="key" data-key="L2" id="gp-btn-l2">L2 / LT</button>
+          <button class="gp-btn gp-shoulder-btn" data-type="key" data-key="L1" id="gp-btn-l1">L1 / LB</button>
+        </div>
+        <div class="gp-center-group">
+          <button class="gp-btn gp-meta-btn" data-type="key" data-key="Select" id="gp-btn-select">SELECT</button>
+          <button class="gp-btn gp-meta-btn" data-type="key" data-key="Start" id="gp-btn-start">START</button>
+        </div>
+        <div class="gp-shoulder-group gp-shoulder-right">
+          <button class="gp-btn gp-shoulder-btn" data-type="key" data-key="R1" id="gp-btn-r1">R1 / RB</button>
+          <button class="gp-btn gp-shoulder-btn" data-type="key" data-key="R2" id="gp-btn-r2">R2 / RT</button>
+        </div>
+      </div>
+
+      <!-- Main Gamepad Zone: Left Stick/D-Pad, Center Extras, Right ABXY -->
+      <div class="gp-main-zone">
+        <!-- Left Side: Analog Thumbstick or D-Pad -->
+        <div class="gp-side-zone gp-left-zone">
+          <!-- Virtual Joystick -->
+          <div id="gp-joystick-wrap" class="gp-joystick-wrap">
+            <div id="gp-joystick-base" class="gp-joystick-base">
+              <div id="gp-joystick-thumb" class="gp-joystick-thumb"></div>
+            </div>
+            <div class="gp-stick-label">MOVEMENT (WASD)</div>
+          </div>
+
+          <!-- Alternative D-Pad -->
+          <div id="gp-dpad-wrap" class="gp-dpad-wrap" style="display: none;">
+            <button class="gp-btn gp-dpad-btn gp-dpad-up" data-type="key" data-key="Up" id="gp-dpad-up">▲</button>
+            <div class="gp-dpad-middle">
+              <button class="gp-btn gp-dpad-btn gp-dpad-left" data-type="key" data-key="Left" id="gp-dpad-left">◀</button>
+              <div class="gp-dpad-center"></div>
+              <button class="gp-btn gp-dpad-btn gp-dpad-right" data-type="key" data-key="Right" id="gp-dpad-right">▶</button>
+            </div>
+            <button class="gp-btn gp-dpad-btn gp-dpad-down" data-type="key" data-key="Down" id="gp-dpad-down">▼</button>
+          </div>
+        </div>
+
+        <!-- Center Quick Utility Buttons (e.g. 1, 2, 3, 4, M) -->
+        <div class="gp-center-zone">
+          <div class="gp-quick-nums">
+            <button class="gp-btn gp-num-btn" data-type="key" data-key="1">1</button>
+            <button class="gp-btn gp-num-btn" data-type="key" data-key="2">2</button>
+            <button class="gp-btn gp-num-btn" data-type="key" data-key="3">3</button>
+            <button class="gp-btn gp-num-btn" data-type="key" data-key="4">4</button>
+          </div>
+          <div class="gp-center-extra">
+            <button class="gp-btn gp-sub-btn" data-type="key" data-key="m">MAP (M)</button>
+            <button class="gp-btn gp-sub-btn" data-type="key" data-key="r">RELOAD (R)</button>
+          </div>
+        </div>
+
+        <!-- Right Side: ABXY Diamond Buttons -->
+        <div class="gp-side-zone gp-right-zone">
+          <div class="gp-abxy-cluster">
+            <button class="gp-btn gp-action-btn gp-btn-y" data-type="key" data-key="Y" id="gp-btn-y">
+              <span>Y</span>
+              <small class="gp-key-hint">E</small>
+            </button>
+            <div class="gp-abxy-middle">
+              <button class="gp-btn gp-action-btn gp-btn-x" data-type="key" data-key="X" id="gp-btn-x">
+                <span>X</span>
+                <small class="gp-key-hint">F</small>
+              </button>
+              <div class="gp-abxy-spacer"></div>
+              <button class="gp-btn gp-action-btn gp-btn-b" data-type="key" data-key="B" id="gp-btn-b">
+                <span>B</span>
+                <small class="gp-key-hint">Shift</small>
+              </button>
+            </div>
+            <button class="gp-btn gp-action-btn gp-btn-a" data-type="key" data-key="A" id="gp-btn-a">
+              <span>A</span>
+              <small class="gp-key-hint">Space</small>
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+
     <!-- Install App Guide Modal -->
     <div id="install-modal" class="install-modal" style="display: none;">
       <div class="install-modal-content">
@@ -609,6 +733,7 @@
   <script src="js/cam.js"></script>
   <script src="js/audio-relay.js"></script>
   <script src="js/keyboard.js"></script>
+  <script src="js/gamepad.js"></script>
   <script src="js/panels.js"></script>
   <script src="js/app.js"></script>
 </body>

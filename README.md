@@ -1,6 +1,6 @@
 # 🖱️ Web Remote Mouse & Wireless Companion for Windows
 
-A modern, zero-install, ultra-responsive Web Remote Mouse, Keyboard, Gyro Air Mouse, AudioRelay, and Webcam for Windows. Turn any smartphone (Android or iOS) into a feature-packed PC controller directly over your local Wi-Fi network.
+A modern, zero-install, ultra-responsive Web Remote Mouse, Keyboard, Gyro Air Mouse, Virtual Gaming Controller, AudioRelay, and Webcam for Windows. Turn any smartphone (Android or iOS) into a feature-packed PC controller directly over your local Wi-Fi network.
 
 ![NodeJS](https://img.shields.io/badge/Node.js-v18+-339933?logo=node.js&logoColor=white)
 ![Platform](https://img.shields.io/badge/Platform-Windows%2010%20%2F%2011-0078D6?logo=windows&logoColor=white)
@@ -84,6 +84,24 @@ A modern, zero-install, ultra-responsive Web Remote Mouse, Keyboard, Gyro Air Mo
 - Fully installable on iOS (Add to Home Screen) and Android (Install App) as a standalone app.
 - Built-in Screen WakeLock API prevents your phone display from turning off while in use.
 
+### 10. 🎮 Virtual Gaming Controller (Gamepad)
+- **Multi-Touch Gaming Layout**: Dedicated left-thumb navigation and right-thumb action clusters supporting simultaneous inputs.
+- **Dynamic 360° Analog Joystick / D-Pad**: Smooth virtual thumbstick with spring-back deadzone mapping to WASD or Arrow keys. Quick-switch to 4-way D-Pad with a single tap.
+- **Diamond Action Cluster (ABXY)**:
+  - `A`: Jump / Accept (`Space`)
+  - `B`: Sprint / Cancel (`Shift`)
+  - `X`: Interact / Reload (`F`)
+  - `Y`: Secondary Action (`E`)
+- **Shoulder Bumpers & Triggers**:
+  - `L1` (LB) / `R1` (RB): Shoulder bumpers for quick weapons, aiming, or firing.
+  - `L2` (LT) / `R2` (RT): Triggers mapped for progressive brake/gas or primary mouse buttons.
+- **Meta & Quick-Action Keys**: `Select` (`Tab`), `Start` (`Esc`), Hotbar/Slots `1, 2, 3, 4`, Map (`M`), and Reload (`R`).
+- **Built-in Presets**:
+  - 🎯 **FPS / Action**: WASD movement, Sprint, Jump, Interact, Mouse clicks.
+  - 🏎️ **Racing**: Accelerate (`W`), Brake/Reverse (`S`), Steer Left/Right (`A`/`D`), Handbrake (`Space`), Nitro (`Shift`).
+  - 🕹️ **Retro / Arcade**: Classic D-Pad arrow navigation with arcade action buttons.
+- **Landscape Console Feel**: Rotate your phone to landscape mode for an ergonomic handheld console layout.
+
 ---
 
 ## 🚀 Getting Started
@@ -156,10 +174,14 @@ Home Wi-Fi routers frequently change PC IP addresses via DHCP, breaking your pho
 │   └── controller.exe        # Compiled binary (SendInput, CoreAudio API)
 ├── public/
 │   ├── css/                  # Modular glassmorphism dark-mode stylesheets
+│   │   ├── style.css         # Core layout, trackpad & touch styling
+│   │   ├── tools.css         # Tools drawer, keyboard & modal styling
+│   │   └── gamepad.css       # Virtual gamepad joystick & buttons styling
 │   ├── js/
 │   │   ├── app.js            # Main PWA lifecycle & initialization
 │   │   ├── trackpad.js       # Mouse gesture engine (drag, tap, multi-touch scroll)
 │   │   ├── air-mouse.js      # 6-axis device orientation gyro engine
+│   │   ├── gamepad.js        # Virtual gaming controller (analog stick, ABXY, presets)
 │   │   ├── keyboard.js       # Direct mobile IME keystroke streamer
 │   │   ├── audio-relay.js    # Low-latency PC sound playback on phone
 │   │   ├── cam.js            # Camera video streaming (OBS / DroidCam)

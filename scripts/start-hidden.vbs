@@ -21,3 +21,4 @@ logFile = rootDir & "\server.log"
 
 cmdLine = "%comspec% /c """"" & nodeExe & """ """ & serverJs & """ >> """ & logFile & """ 2>&1"""
 WshShell.Run cmdLine, 0, False
+
