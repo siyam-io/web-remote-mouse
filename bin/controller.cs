@@ -529,22 +529,34 @@ namespace RemoteMouse {
             return _audio;
         }
 
+        const byte VK_VOLUME_MUTE = 0xAD;
+        const byte VK_VOLUME_DOWN = 0xAE;
+        const byte VK_VOLUME_UP = 0xAF;
+
         static void HandleVolume(string action) {
+            if (action == "up") {
+                TapKey(VK_VOLUME_UP, true);
+                return;
+            } else if (action == "down") {
+                TapKey(VK_VOLUME_DOWN, true);
+                return;
+            } else if (action == "mute") {
+                TapKey(VK_VOLUME_MUTE, true);
+                return;
+            }
+
             var audio = GetAudio();
             Guid empty = Guid.Empty;
             if (audio != null) {
                 try {
                     if (action == "up") {
                         audio.VolumeStepUp(ref empty);
-                        return;
                     } else if (action == "down") {
                         audio.VolumeStepDown(ref empty);
-                        return;
                     } else if (action == "mute") {
                         bool currentMute;
                         audio.GetMute(out currentMute);
                         audio.SetMute(!currentMute, ref empty);
-                        return;
                     }
                 } catch {
                     _audio = null;
